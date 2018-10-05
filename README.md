@@ -60,7 +60,7 @@ additionally, the following dependency must be added to the project:
 <dependency>
     <groupId>org.slf4j</groupId>
     <artifactId>jul-to-slf4j</artifactId>
-    <version>1.7.22</version>
+    <version>x.y.z</version>
 </dependency>
 ```
 This will direct the `java.util.logging` logging statements to SLF4J, and make them available to any
