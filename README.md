@@ -14,6 +14,7 @@ dice-fairlink implements a generic sub-protocol of any existing jdbc protocol (p
 of the URL should be the cluster identifier and not the hostname of any cluster or instance endpoint.
 The driver will accept urls in the form `jdbc:XXXX:auroraro` and delegate the actual handling of the connection
 to the driver of the protocol `XXXX`
+
 ##Example:
 In a cluster named `my-cluster` with three read replicas `my-cluster-r1`, `my-cluster-r2` and, `my-cluster-r3`, and 
 the following connection string
