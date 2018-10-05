@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>technology.dice.open</groupId>
+	<artifactId>dice-fairlink</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>dice-fairlink</name>
+
+	<packaging>jar</packaging>
+
+	<description>dice-fairlink is a JDBC driver design to connect to the read replicas of an AWS Aurora cluster
+	</description>
+	<url>http://open.dice.technology/dice-fairlink</url>
+
+	<scm>
+		<connection>scm:git:git@github.com:DiceTechnology/dice-fairlink.git</connection>
+		<developerConnection>scm:git:ssh://github.com:DiceTechnology/dice-fairlink.git</developerConnection>
+		<url>http://github.com/DiceTechnology/dice-where/tree/master</url>
+	</scm>
+
+	<licenses>
+		<license>
+			<name>MIT License</name>
+			<url>http://www.opensource.org/licenses/mit-license.php</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Goncalo Luiz</name>
+			<id>gedl</id>
+			<email>gluiz at endeavorco dot com</email>
+			<organization>DiceTechnology</organization>
+			<organizationUrl>http://open.dice.technology</organizationUrl>
+		</developer>
+	</developers>
+
+	<properties>
+		<aws.rds.sdk>1.11.421</aws.rds.sdk>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-rds</artifactId>
+			<version>${aws.rds.sdk}</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.6.0</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
