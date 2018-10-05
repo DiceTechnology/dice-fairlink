@@ -45,4 +45,23 @@ Ignored otherwise.
 - `replicaPollInterval`: the interval, in seconds, between each refresh of the list of read replicas. default: `30` 
 
 
-all properties (including the list above) will be passed to the underlying driver.  
+all properties (including the list above) will be passed to the underlying driver.
+
+# Logging
+To limit the dependencies of dice-fairlink, the `java.util.logging` package is used for logging. 
+Client applications may make use of the popular `slf4j` library, in which case the following block of 
+bootstrap code is necessary to connect the two logging systems:
+```java
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
+```
+additionally, the following dependency must be added to the project:
+```xml
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>jul-to-slf4j</artifactId>
+    <version>1.7.22</version>
+</dependency>
+```
+This will direct the `java.util.logging` logging statements to SLF4J, and make them available to any
+logging backend as `logback` or `log4j.
