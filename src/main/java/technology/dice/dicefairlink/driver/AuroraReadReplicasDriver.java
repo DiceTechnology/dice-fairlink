@@ -155,7 +155,7 @@ public class AuroraReadReplicasDriver implements java.sql.Driver {
   public Connection connect(String url, Properties properties) throws SQLException {
     Optional<ParsedUrl> parsedUrlOptional = this.parseUrlAndCacheDriver(url, properties);
     if (!parsedUrlOptional.isPresent()) {
-      throw new SQLException("Invalid url: '" + url + "'");
+      throw new SQLException(String.format("Invalid url: [%s]", url));
     }
     ParsedUrl parsedUrl = parsedUrlOptional.get();
     return delegates
