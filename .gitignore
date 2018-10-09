@@ -17,3 +17,5 @@ bin/
 *.iml
 .DS_Store
 *.mmdb
+/nbproject/
+/mavenproject1/nbproject/
