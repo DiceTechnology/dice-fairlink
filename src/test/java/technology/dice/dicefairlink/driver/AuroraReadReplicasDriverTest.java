@@ -32,7 +32,6 @@ import java.util.Properties;
 public class AuroraReadReplicasDriverTest {
 
   private static final String VALID_JDBC_URL = "jdbc:mysql:auroraro://aa:123/db?param1=123&param2=true&param3=abc";
-  private static final String VALID_LOW_JDBC_URL = "jdbc:mysql://aa:123/db?param1=123&param2=true&param3=abc";
 
   @Test(expected = SQLException.class)
   public void throwsOnAcceptsURL_nullString() throws Exception {
@@ -65,26 +64,6 @@ public class AuroraReadReplicasDriverTest {
     AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver();
     final Properties emptyProperties = new Properties();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, emptyProperties);
-  }
-
-  @Test
-  public void testGetMajorVersion() {
-  }
-
-  @Test
-  public void testGetMinorVersion() {
-  }
-
-  @Test
-  public void testGetParentLogger() {
-  }
-
-  @Test
-  public void testGetPropertyInfo() {
-  }
-
-  @Test
-  public void testJdbcCompliant() {
   }
 
 }
