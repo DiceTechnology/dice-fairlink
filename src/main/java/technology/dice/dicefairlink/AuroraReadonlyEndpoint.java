@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -35,7 +34,6 @@ public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
   private final Duration pollerInterval;
-  private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
   private CyclicIterator<String> replicas;
   private String readOnlyEndpoint;
 
@@ -43,7 +41,8 @@ public class AuroraReadonlyEndpoint {
       String clusterId,
       AWSCredentialsProvider credentialsProvider,
       Duration pollerInterval,
-      Regions region) {
+      Regions region,
+      ScheduledExecutorService executor) {
     AuroraReplicasFinder finder = new AuroraReplicasFinder(clusterId, credentialsProvider, region);
     this.pollerInterval = pollerInterval;
     finder.init();
@@ -81,10 +80,7 @@ public class AuroraReadonlyEndpoint {
       DescribeDBClustersResult describeDBClustersResult =
           client.describeDBClusters(
               new DescribeDBClustersRequest().withDBClusterIdentifier(this.clusterId));
-      if (describeDBClustersResult.getDBClusters().size() != 1) {
-        return Optional.empty();
-      }
-      return Optional.of(describeDBClustersResult.getDBClusters().get(0));
+      return describeDBClustersResult.getDBClusters().stream().findFirst();
     }
 
     private List<String> replicaMembersOf(DBCluster cluster) {

@@ -45,7 +45,7 @@ public class CyclicIteratorTest {
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
-    assertThat(cyclicIterator.hasNext()).isEqualTo(true); // fixme should be proper hasNext
+    assertThat(cyclicIterator.hasNext()).isEqualTo(false); // fixme should be proper hasNext
     cyclicIterator.next(); // final step throws
   }
 
@@ -55,7 +55,7 @@ public class CyclicIteratorTest {
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
-    assertThat(cyclicIterator.hasNext()).isEqualTo(true); // fixme should be proper hasNext
+    assertThat(cyclicIterator.hasNext()).isEqualTo(false); // fixme should be proper hasNext
     cyclicIterator.next(); // final step throws
   }
 

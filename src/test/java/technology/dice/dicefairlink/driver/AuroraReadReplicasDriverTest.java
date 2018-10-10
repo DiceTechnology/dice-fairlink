@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Test;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class AuroraReadReplicasDriverTest {
 
@@ -35,33 +36,33 @@ public class AuroraReadReplicasDriverTest {
 
   @Test(expected = SQLException.class)
   public void throwsOnAcceptsURL_nullString() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver();
+    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     auroraReadReplicasDriver.acceptsURL(null);
   }
 
   @Test
   public void canAcceptsURL_emptyString() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver();
+    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     boolean retunedValue = auroraReadReplicasDriver.acceptsURL("");
     assertThat(retunedValue).isEqualTo(false);
   }
 
   @Test
   public void canAcceptsURL_validString() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver();
+    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     boolean retunedValue = auroraReadReplicasDriver.acceptsURL(VALID_JDBC_URL);
     assertThat(retunedValue).isEqualTo(true);
   }
 
   @Test(expected = NullPointerException.class)
   public void failToConnectToValidUrl_nullProperties() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver();
+    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, null);
   }
 
   @Test(expected = SQLException.class)
   public void failToConnectToValidUrl_emptyProperties() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver();
+    AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     final Properties emptyProperties = new Properties();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, emptyProperties);
   }

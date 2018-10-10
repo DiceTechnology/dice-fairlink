@@ -26,7 +26,7 @@ public class CyclicIterator<T> implements Iterator<T> {
 
   @Override
   public boolean hasNext() {
-    return true;
+    return !elements.isEmpty();
   }
 
   @Override

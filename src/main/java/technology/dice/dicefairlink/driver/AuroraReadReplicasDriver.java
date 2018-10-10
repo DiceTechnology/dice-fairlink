@@ -27,18 +27,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class AuroraReadReplicasDriver implements java.sql.Driver {
+public class AuroraReadReplicasDriver implements Driver {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadReplicasDriver.class.getName());
   private static final Pattern driverPattern =
       Pattern.compile("jdbc:(?<delegate>[^:]*):(?<uri>auroraro:.*\\/\\/.+)");
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
-  private static final String JDBC_PREX = "jdbc";
+  private static final String JDBC_PREFIX = "jdbc";
   private final Map<String, Driver> delegates = new HashMap<>();
   private final Map<URI, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
 
@@ -48,12 +50,18 @@ public class AuroraReadReplicasDriver implements java.sql.Driver {
   private static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
   private static final String CLUSTER_REGION = "auroraClusterRegion";
 
+  private final ScheduledExecutorService executor;
+
   static {
     try {
-      DriverManager.registerDriver(new AuroraReadReplicasDriver());
+      DriverManager.registerDriver(new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1)));
     } catch (Exception e) {
       throw new RuntimeException("Can't register driver!", e);
     }
+  }
+
+  public AuroraReadReplicasDriver(final ScheduledExecutorService executor) {
+    this.executor = executor;
   }
 
   private AWSCredentialsProvider awsAuth(Properties properties) throws SQLException {
@@ -115,7 +123,7 @@ public class AuroraReadReplicasDriver implements java.sql.Driver {
           return Optional.empty();
         }
         AuroraReadonlyEndpoint ro =
-            new AuroraReadonlyEndpoint(uri.getHost(), credentialsProvider, pollerInterval, region);
+            new AuroraReadonlyEndpoint(uri.getHost(), credentialsProvider, pollerInterval, region, executor);
         this.auroraClusters.put(uri, ro);
       }
 
@@ -126,7 +134,7 @@ public class AuroraReadReplicasDriver implements java.sql.Driver {
               nextReplica, uri.getHost()));
       URI connectURI =
           new URI(
-              String.format("%s:%s", JDBC_PREX, delegate),
+              String.format("%s:%s", JDBC_PREFIX, delegate),
               uri.getUserInfo(),
               nextReplica,
               uri.getPort(),
