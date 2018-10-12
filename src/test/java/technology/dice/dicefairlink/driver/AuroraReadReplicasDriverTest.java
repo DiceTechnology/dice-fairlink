@@ -25,6 +25,7 @@
 package technology.dice.dicefairlink.driver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.amazonaws.services.rds.model.DBClusterNotFoundException;
 import org.junit.Test;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -32,7 +33,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class AuroraReadReplicasDriverTest {
 
-  private static final String VALID_JDBC_URL = "jdbc:mysql:auroraro://aa:123/db?param1=123&param2=true&param3=abc";
+  private static final String VALID_JDBC_URL = "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
 
   @Test(expected = SQLException.class)
   public void throwsOnAcceptsURL_nullString() throws Exception {
@@ -57,14 +58,14 @@ public class AuroraReadReplicasDriverTest {
   @Test(expected = NullPointerException.class)
   public void failToConnectToValidUrl_nullProperties() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
-    auroraReadReplicasDriver.connect(VALID_JDBC_URL, null);
+    auroraReadReplicasDriver.connect(VALID_JDBC_URL, null); // last call must throw
   }
 
-  @Test(expected = SQLException.class)
+  @Test(expected = DBClusterNotFoundException.class)
   public void failToConnectToValidUrl_emptyProperties() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     final Properties emptyProperties = new Properties();
-    auroraReadReplicasDriver.connect(VALID_JDBC_URL, emptyProperties);
+    auroraReadReplicasDriver.connect(VALID_JDBC_URL, emptyProperties); // last call must throw
   }
 
 }

@@ -6,7 +6,7 @@
 package technology.dice.dicefairlink;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.regions.Regions;
+import com.amazonaws.regions.Region;
 import com.amazonaws.services.rds.AmazonRDSAsync;
 import com.amazonaws.services.rds.AmazonRDSAsyncClient;
 import com.amazonaws.services.rds.model.DBCluster;
@@ -17,8 +17,8 @@ import com.amazonaws.services.rds.model.DescribeDBClustersResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
-import technology.dice.dicefairlink.iterators.CyclicIterator;
 
+import technology.dice.dicefairlink.iterators.RansomisedCyclicIterator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,14 +34,14 @@ public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
   private final Duration pollerInterval;
-  private CyclicIterator<String> replicas;
+  private RansomisedCyclicIterator<String> replicas;
   private String readOnlyEndpoint;
 
   public AuroraReadonlyEndpoint(
       String clusterId,
       AWSCredentialsProvider credentialsProvider,
       Duration pollerInterval,
-      Regions region,
+      Region region,
       ScheduledExecutorService executor) {
     AuroraReplicasFinder finder = new AuroraReplicasFinder(clusterId, credentialsProvider, region);
     this.pollerInterval = pollerInterval;
@@ -67,11 +67,13 @@ public class AuroraReadonlyEndpoint {
     private final String clusterId;
 
     public AuroraReplicasFinder(
-        String clusterId, AWSCredentialsProvider credentialsProvider, Regions region) {
+        String clusterId, AWSCredentialsProvider credentialsProvider, Region region) {
       this.clusterId = clusterId;
+      LOGGER.log(Level.INFO, "Cluster ID: {0}", clusterId);
+      LOGGER.log(Level.INFO, "AWS Region: {0}", region);
       this.client =
           AmazonRDSAsyncClient.asyncBuilder()
-              .withRegion(region)
+              .withRegion(region.getName())
               .withCredentials(credentialsProvider)
               .build();
     }
@@ -153,14 +155,14 @@ public class AuroraReadonlyEndpoint {
         }
         List<String> readerUrls =
             dbClusterOptional.map(cluster -> replicaMembersOf(cluster)).orElse(new ArrayList<>(0));
-        replicas = CyclicIterator.of(readerUrls);
+        replicas = RansomisedCyclicIterator.of(readerUrls);
         if (readerUrls.size() == 0) {
           LOGGER.warning(
               String.format(
                   "No read replicas found for cluster [%s]. Will fallback to [%s] until individual members can be retrieved again",
                   clusterId, readOnlyEndpoint));
         }
-        LOGGER.info(
+        LOGGER.log(Level.FINE,
             String.format(
                 "Retrieved [%s] read replicas for cluster id [%s] with. List will be refreshed in [%s] seconds",
                 readerUrls.size(), clusterId, pollerInterval.getSeconds()));
@@ -184,7 +186,7 @@ public class AuroraReadonlyEndpoint {
       DBCluster cluster = dbClusterOptional.get();
       readOnlyEndpoint = cluster.getReaderEndpoint();
       List<String> readerUrls = replicaMembersOf(cluster);
-      replicas = CyclicIterator.of(readerUrls);
+      replicas = RansomisedCyclicIterator.of(readerUrls);
       LOGGER.info(
           String.format(
               "Initialized driver for cluster id [%s] with [%s] read replicas. List will be refreshed every [%s] seconds",

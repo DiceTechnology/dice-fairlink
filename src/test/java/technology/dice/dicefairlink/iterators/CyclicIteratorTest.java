@@ -41,7 +41,7 @@ public class CyclicIteratorTest {
 
   @Test(expected = NoSuchElementException.class)
   public void canCallOfFromEmptyList() {
-    CyclicIterator cyclicIterator = CyclicIterator.of(Collections.EMPTY_LIST);
+    RansomisedCyclicIterator cyclicIterator = RansomisedCyclicIterator.of(Collections.EMPTY_LIST);
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
@@ -51,7 +51,7 @@ public class CyclicIteratorTest {
 
   @Test(expected = NoSuchElementException.class)
   public void canCallOfFromEmptySet() {
-    CyclicIterator cyclicIterator = CyclicIterator.of(Collections.EMPTY_SET);
+    RansomisedCyclicIterator cyclicIterator = RansomisedCyclicIterator.of(Collections.EMPTY_SET);
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
@@ -66,7 +66,7 @@ public class CyclicIteratorTest {
     final List<String> listOfStrings = new LinkedList<>();
     listOfStrings.add(singleElement);
 
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(listOfStrings);
+    RansomisedCyclicIterator<String> cyclicIterator = RansomisedCyclicIterator.<String>of(listOfStrings);
 
     assertThat(cyclicIterator).isNotNull();
     for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
@@ -82,7 +82,7 @@ public class CyclicIteratorTest {
     Set<String> setOfString = new LinkedHashSet<>();
     setOfString.add(singleElement);
 
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(setOfString);
+    RansomisedCyclicIterator<String> cyclicIterator = RansomisedCyclicIterator.<String>of(setOfString);
 
     assertThat(cyclicIterator).isNotNull();
     for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
@@ -101,7 +101,7 @@ public class CyclicIteratorTest {
       listOfStrings.add(singleElement);
     }
 
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(listOfStrings);
+    RansomisedCyclicIterator<String> cyclicIterator = RansomisedCyclicIterator.<String>of(listOfStrings);
 
 
     assertThat(cyclicIterator).isNotNull();
@@ -109,27 +109,6 @@ public class CyclicIteratorTest {
       for(int i = 0; i < size; i++) {
         assertThat(cyclicIterator.hasNext()).isEqualTo(true);
         assertThat(cyclicIterator.next()).isEqualTo(singleElement);
-      }
-    }
-  }
-
-  @Test
-  public void canOperateWithSetOfMultipleElement() {
-    final int size = ThreadLocalRandom.current().nextInt(100, 1000);
-    final Set<String> setOfStrings = new LinkedHashSet<>();
-
-    for(int i = 0; i < size; i++) {
-      setOfStrings.add(elemetPrefix + i);
-    }
-
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(setOfStrings);
-
-    assertThat(cyclicIterator).isNotNull();
-
-    for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
-      for(int i = 0; i < size; i++) {
-        assertThat(cyclicIterator.hasNext()).isEqualTo(true);
-        assertThat(cyclicIterator.next()).isEqualTo(elemetPrefix + i);
       }
     }
   }

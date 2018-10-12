@@ -7,21 +7,25 @@ package technology.dice.dicefairlink.iterators;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ThreadLocalRandom;
 
-public class CyclicIterator<T> implements Iterator<T> {
-  private final Collection<T> elements;
+public class RansomisedCyclicIterator<T> implements Iterator<T> {
+  private final List<T> elements;
   private Iterator<T> iterator;
 
-  private CyclicIterator(Collection<? extends T> collection) {
+  protected RansomisedCyclicIterator(Collection<? extends T> collection) {
     this.elements = new ArrayList<>(collection.size());
     this.elements.addAll(collection);
+    Collections.shuffle(elements, ThreadLocalRandom.current());
     this.iterator = this.elements.iterator();
   }
 
-  public static <T> CyclicIterator<T> of(Collection<? extends T> collection) {
-    return new CyclicIterator<>(collection);
+  public static <T> RansomisedCyclicIterator<T> of(Collection<? extends T> collection) {
+    return new RansomisedCyclicIterator<>(collection);
   }
 
   @Override
@@ -39,5 +43,9 @@ public class CyclicIterator<T> implements Iterator<T> {
     }
     T next = this.iterator.next();
     return next;
+  }
+
+  protected Collection<T> getElements() {
+    return this.elements;
   }
 }
