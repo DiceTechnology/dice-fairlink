@@ -110,8 +110,10 @@ public class AuroraReadReplicasDriverConnectTest {
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
 
-    Mockito.verify(mockDbClusterMember, times(2)).isClusterWriter();
-    Mockito.verify(mockDbClusterMember, times(6)).getDBInstanceIdentifier();
+    Mockito.verify(mockDbClusterMember, times(2)).isClusterWriter();  // 2 - because of: Init step + execution steps in stepByStepExecutor
+    Mockito.verify(mockDbClusterMember, times(2)).getDBInstanceIdentifier();
+    Mockito.verify(mockDbInstance, times(2)).getEndpoint();
+    Mockito.verify(mockEndpoint, times(2)).getAddress();
 
   }
 

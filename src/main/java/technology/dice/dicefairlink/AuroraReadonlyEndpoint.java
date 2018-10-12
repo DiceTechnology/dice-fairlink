@@ -94,48 +94,38 @@ public class AuroraReadonlyEndpoint {
               .collect(Collectors.toList());
       List<String> urls = new ArrayList<>(readReplicas.size());
       for (DBClusterMember readReplica : readReplicas) {
-        LOGGER.log(
-            Level.FINE,
-            String.format(
-                "Found read replica in cluster [%s]: [%s])",
-                clusterId, readReplica.getDBInstanceIdentifier()));
+        final String dbInstanceIdentifier = readReplica.getDBInstanceIdentifier();
+        LOGGER.log(Level.FINE,
+            String.format("Found read replica in cluster [%s]: [%s])",
+                clusterId, dbInstanceIdentifier));
 
         DescribeDBInstancesResult describeDBInstancesResult =
-            client.describeDBInstances(
-                new DescribeDBInstancesRequest()
-                    .withDBInstanceIdentifier(readReplica.getDBInstanceIdentifier()));
+            client.describeDBInstances(new DescribeDBInstancesRequest()
+                    .withDBInstanceIdentifier(dbInstanceIdentifier));
         if (describeDBInstancesResult.getDBInstances().size() != 1) {
-          LOGGER.log(
-              Level.WARNING,
-              String.format(
-                  "Got [%s] database instances for identifier [%s] (member of cluster [%s]). This is unexpected. Skipping.",
-                  describeDBInstancesResult.getDBInstances().size(),
-                  readReplica.getDBInstanceIdentifier(),
+          LOGGER.log(Level.WARNING,
+              String.format("Got [%s] database instances for identifier [%s] (member of cluster [%s]). This is unexpected. Skipping.",
+                  describeDBInstancesResult.getDBInstances().size(), dbInstanceIdentifier,
                   clusterId));
         } else {
           DBInstance readerInstance = describeDBInstancesResult.getDBInstances().get(0);
           Endpoint endpoint = readerInstance.getEndpoint();
           if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.getDBInstanceStatus())) {
-            LOGGER.warning(
-                String.format(
-                    "Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
-                    readReplica.getDBInstanceIdentifier(),
-                    clusterId,
-                    readerInstance.getDBInstanceStatus(),
-                    ACTIVE_STATUS));
+            LOGGER.warning(String.format("Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
+                dbInstanceIdentifier,
+                clusterId,
+                readerInstance.getDBInstanceStatus(),
+                ACTIVE_STATUS));
           } else if (endpoint == null) {
-            LOGGER.warning(
-                String.format(
-                    "Found [%s] as a replica for [%s] but it does not have a reachable address. Maybe it is still being created. Skipping",
-                    readReplica.getDBInstanceIdentifier(), clusterId));
+            LOGGER.warning(String.format("Found [%s] as a replica for [%s] but it does not have a reachable address. Maybe it is still being created. Skipping",
+                dbInstanceIdentifier,
+                clusterId));
 
           } else {
-            LOGGER.log(
-                Level.FINE,
-                String.format(
-                    "Accepted instance with id [%s] with URL=[%s] to cluster [%s]",
-                    readReplica.getDBInstanceIdentifier(), endpoint.getAddress(), clusterId));
-            urls.add(endpoint.getAddress());
+            final String endPointAddress = endpoint.getAddress();
+            LOGGER.log(Level.FINE,
+                String.format("Accepted instance with id [%s] with URL=[%s] to cluster [%s]", dbInstanceIdentifier, endPointAddress, clusterId));
+            urls.add(endPointAddress);
           }
         }
       }

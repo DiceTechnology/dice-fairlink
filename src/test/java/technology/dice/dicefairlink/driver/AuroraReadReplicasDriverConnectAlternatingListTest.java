@@ -137,15 +137,15 @@ public class AuroraReadReplicasDriverConnectAlternatingListTest {
     stepByStepExecutor.step();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
 
-    verify(mockDbClusterMember_A, times(3)).isClusterWriter();
-    verify(mockDbClusterMember_A, times(9)).getDBInstanceIdentifier();
+    verify(mockDbClusterMember_A, times(3)).isClusterWriter(); // 3 - because of: Init step + 2 execution steps in stepByStepExecutor
+    verify(mockDbClusterMember_A, times(3)).getDBInstanceIdentifier();
     verify(mockDbInstance_A, times(3)).getEndpoint();
-    verify(mockEndpoint_A, times(6)).getAddress();
+    verify(mockEndpoint_A, times(3)).getAddress();
 
     verify(mockDbClusterMember_B, times(3)).isClusterWriter();
-    verify(mockDbClusterMember_B, times(9)).getDBInstanceIdentifier();
+    verify(mockDbClusterMember_B, times(3)).getDBInstanceIdentifier();
     verify(mockDbInstance_B, times(3)).getEndpoint();
-    verify(mockEndpoint_B, times(6)).getAddress();
+    verify(mockEndpoint_B, times(3)).getAddress();
   }
 
 }
