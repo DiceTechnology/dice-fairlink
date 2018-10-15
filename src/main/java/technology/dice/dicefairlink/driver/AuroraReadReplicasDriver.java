@@ -91,7 +91,7 @@ public class AuroraReadReplicasDriver implements Driver {
         return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
       default:
         ENVIRONMENT:
-        if(LOGGER.getLevel() != null && Level.FINE.intValue() >= LOGGER.getLevel().intValue())
+        if(LOGGER.isLoggable(Level.FINE))
         {
           String accessKey = System.getenv(ACCESS_KEY_ENV_VAR);
           if (accessKey == null) {

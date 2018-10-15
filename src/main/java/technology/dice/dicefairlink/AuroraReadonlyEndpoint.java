@@ -54,7 +54,8 @@ public class AuroraReadonlyEndpoint {
     try {
       return this.replicas.next();
     } catch (NoSuchElementException e) {
-      LOGGER.warning(
+      LOGGER.log(
+          Level.WARNING,
           String.format(
               "Could not find any read replicas. Returning the read only endpoint ([%s]) to fallback on Aurora balancing",
               this.readOnlyEndpoint));
@@ -95,7 +96,8 @@ public class AuroraReadonlyEndpoint {
       List<String> urls = new ArrayList<>(readReplicas.size());
       for (DBClusterMember readReplica : readReplicas) {
         final String dbInstanceIdentifier = readReplica.getDBInstanceIdentifier();
-        LOGGER.log(Level.FINE,
+        LOGGER.log(
+            Level.FINE,
             String.format(
                 "Found read replica in cluster [%s]: [%s])",
                 clusterId,
@@ -105,7 +107,8 @@ public class AuroraReadonlyEndpoint {
             client.describeDBInstances(new DescribeDBInstancesRequest()
                     .withDBInstanceIdentifier(dbInstanceIdentifier));
         if (describeDBInstancesResult.getDBInstances().size() != 1) {
-          LOGGER.log(Level.WARNING,
+          LOGGER.log(
+              Level.WARNING,
               String.format(
                   "Got [%s] database instances for identifier [%s] (member of cluster [%s]). This is unexpected. Skipping.",
                   describeDBInstancesResult.getDBInstances().size(),
@@ -122,7 +125,8 @@ public class AuroraReadonlyEndpoint {
                     readerInstance.getDBInstanceStatus(),
                     ACTIVE_STATUS));
           } else if (endpoint == null) {
-            LOGGER.warning(
+            LOGGER.log(
+                Level.WARNING,
                 String.format(
                     "Found [%s] as a replica for [%s] but it does not have a reachable address. Maybe it is still being created. Skipping",
                     dbInstanceIdentifier,
@@ -147,7 +151,8 @@ public class AuroraReadonlyEndpoint {
       try {
         Optional<DBCluster> dbClusterOptional = this.describeCluster();
         if (!dbClusterOptional.isPresent()) {
-          LOGGER.warning(
+          LOGGER.log(
+              Level.WARNING,
               String.format(
                   "Could not retrieve cluster information for cluster [%s]. Will fallback to [%s] until individual members can be retrieved again",
                   clusterId, readOnlyEndpoint));
@@ -157,18 +162,19 @@ public class AuroraReadonlyEndpoint {
             dbClusterOptional.map(cluster -> replicaMembersOf(cluster)).orElse(new ArrayList<>(0));
         replicas = RansomisedCyclicIterator.of(readerUrls);
         if (readerUrls.size() == 0) {
-          LOGGER.warning(
-              String.format(
-                  "No read replicas found for cluster [%s]. Will fallback to [%s] until individual members can be retrieved again",
-                  clusterId,
-                  readOnlyEndpoint));
+          LOGGER.log(
+              Level.WARNING,
+              "No read replicas found for cluster [{0}]. Will fallback to [{1}] until individual members can be retrieved again",
+              new Object[] {clusterId, readOnlyEndpoint});
         }
-        LOGGER.log(Level.FINE,
-            String.format(
-                "Retrieved [%s] read replicas for cluster id [%s] with. List will be refreshed in [%s] seconds",
-                readerUrls.size(),
-                clusterId,
-                pollerInterval.getSeconds()));
+        if(LOGGER.isLoggable(Level.FINE)) {
+          LOGGER.log(Level.FINE,
+              String.format(
+                  "Retrieved [%s] read replicas for cluster id [%s] with. List will be refreshed in [%s] seconds",
+                  readerUrls.size(),
+                  clusterId,
+                  pollerInterval.getSeconds()));
+        }
       } catch (Exception e) {
         LOGGER.log(
             Level.SEVERE,
@@ -191,7 +197,8 @@ public class AuroraReadonlyEndpoint {
       readOnlyEndpoint = cluster.getReaderEndpoint();
       List<String> readerUrls = replicaMembersOf(cluster);
       replicas = RansomisedCyclicIterator.of(readerUrls);
-      LOGGER.info(
+      LOGGER.log(
+          Level.INFO,
           String.format(
               "Initialized driver for cluster id [%s] with [%s] read replicas. List will be refreshed every [%s] seconds",
               clusterId,
