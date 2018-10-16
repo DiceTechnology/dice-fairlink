@@ -2,7 +2,7 @@
 
 dice-fairlink is a JDBC driver designed to connect to the read replicas of an AWS Aurora cluster.
 The driver will periodically obtain a description of the cluster and dispatch connections to each read replica
-on a pure round-robin fashion.
+on round-robin fashion.
 
 # Installation
 
