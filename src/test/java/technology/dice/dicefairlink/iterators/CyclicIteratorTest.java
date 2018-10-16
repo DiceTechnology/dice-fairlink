@@ -5,9 +5,9 @@
  */
 package technology.dice.dicefairlink.iterators;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
+
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -16,9 +16,11 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class CyclicIteratorTest {
 
-  private final String elemetPrefix = "TEST_";
+  private static final String ELEMENT_PREFIX = "TEST_";
 
   @Test(expected = NoSuchElementException.class)
   public void canCallOfFromEmptyList() {
@@ -42,7 +44,7 @@ public class CyclicIteratorTest {
 
   @Test
   public void canOperateWithListOfSingleElement() {
-    final String singleElement = elemetPrefix + "_1";
+    final String singleElement = ELEMENT_PREFIX + "_1";
 
     final List<String> listOfStrings = new LinkedList<>();
     listOfStrings.add(singleElement);
@@ -58,7 +60,7 @@ public class CyclicIteratorTest {
 
   @Test
   public void canOperateWithSetOfSingleElement() {
-    final String singleElement = elemetPrefix + "_1";
+    final String singleElement = ELEMENT_PREFIX + "_1";
 
     Set<String> setOfString = new LinkedHashSet<>();
     setOfString.add(singleElement);
@@ -74,7 +76,7 @@ public class CyclicIteratorTest {
 
   @Test
   public void canOperateWithListOfMultipleIdenticalElements() {
-    final String singleElement = elemetPrefix + "_1";
+    final String singleElement = ELEMENT_PREFIX + "_1";
     final int size = ThreadLocalRandom.current().nextInt(100, 1000);
     final List<String> listOfStrings = new LinkedList<>();
 
