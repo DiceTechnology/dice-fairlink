@@ -7,21 +7,26 @@ package technology.dice.dicefairlink.iterators;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ThreadLocalRandom;
 
-public class CyclicIterator<T> implements Iterator<T> {
-  private final Collection<T> elements;
+public class RandomisedCyclicIterator<T> implements Iterator<T> {
+
+  private final List<T> elements;
   private Iterator<T> iterator;
 
-  private CyclicIterator(Collection<? extends T> collection) {
+  protected RandomisedCyclicIterator(Collection<? extends T> collection) {
     this.elements = new ArrayList<>(collection.size());
     this.elements.addAll(collection);
+    Collections.shuffle(elements, ThreadLocalRandom.current());
     this.iterator = this.elements.iterator();
   }
 
-  public static <T> CyclicIterator<T> of(Collection<? extends T> collection) {
-    return new CyclicIterator<>(collection);
+  public static <T> RandomisedCyclicIterator<T> of(Collection<? extends T> collection) {
+    return new RandomisedCyclicIterator<>(collection);
   }
 
   @Override
@@ -31,13 +36,14 @@ public class CyclicIterator<T> implements Iterator<T> {
 
   @Override
   public synchronized T next() {
-    if (!this.iterator.hasNext()) {
-      this.iterator = this.elements.iterator();
-      if (!this.iterator.hasNext()) {
+    if (!iterator.hasNext()) {
+      iterator = elements.iterator();
+      if (!iterator.hasNext()) {
         throw new NoSuchElementException();
       }
     }
-    T next = this.iterator.next();
+    T next = iterator.next();
     return next;
   }
+
 }

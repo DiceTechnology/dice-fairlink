@@ -1,27 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) 2018 - present by Dice Technology Ltd.
  *
- * Copyright 2018 Andrey Lebedenko (andrey.lebedenko@img.com).
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Please see distribution for license.
  */
-
 package technology.dice.dicefairlink.driver;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -59,8 +40,8 @@ import java.util.concurrent.TimeUnit;
 @RunWith(PowerMockRunner.class)
 public class AuroraReadReplicasDriverConnectTest {
 
-  private static final String VALID_JDBC_URL = "jdbc:mysql:auroraro://aa:123/db?param1=123&param2=true&param3=abc";
-  private static final String VALID_LOW_JDBC_URL = "jdbc:mysql://replica-1-ro:123/db?param1=123&param2=true&param3=abc";
+  private static final String VALID_JDBC_URL = "jdbc:auroraro:postresql://aa:123/db?param1=123&param2=true&param3=abc";
+  private static final String VALID_LOW_JDBC_URL = "jdbc:postresql://replica-1-ro:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_ENDPOINT_ADDRESS = "replica-1-ro";
 
   @Test
@@ -73,7 +54,7 @@ public class AuroraReadReplicasDriverConnectTest {
     validProperties.put("auroraDiscoveryAuthMode", "basic");
     validProperties.put("auroraDiscoveryKeyId", "TestAwsKey123");
     validProperties.put("auroraDiscoverKeySecret", "TestAwsSecret123");
-    validProperties.put("auroraClusterRegion", "TestAwsRegion");
+    validProperties.put("auroraClusterRegion", "eu-west-1");
 
     final AmazonRDSAsyncClientBuilder mockAmazonRDSAsyncClientBuilder = mock(AmazonRDSAsyncClientBuilder.class);
     final AmazonRDSAsync mockAmazonRDSAsync = mock(AmazonRDSAsync.class);
@@ -85,7 +66,6 @@ public class AuroraReadReplicasDriverConnectTest {
     final Endpoint mockEndpoint = mock(Endpoint.class);
     final Driver mockDriver = mock(Driver.class);
 
-    PowerMockito.mockStatic(Regions.class);
     PowerMockito.mockStatic(AmazonRDSAsyncClient.class);
     PowerMock.mockStatic(DriverManager.class);
     DriverManager.registerDriver(EasyMock.anyObject(AuroraReadReplicasDriver.class));
@@ -93,9 +73,8 @@ public class AuroraReadReplicasDriverConnectTest {
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL)).andReturn(mockDriver);
     PowerMock.replay(DriverManager.class);
 
-    Mockito.when(Regions.fromName("TestAwsRegion")).thenReturn(Regions.DEFAULT_REGION);
-    Mockito.when(AmazonRDSAsyncClient.asyncBuilder()).thenReturn(mockAmazonRDSAsyncClientBuilder);
-    Mockito.when(mockAmazonRDSAsyncClientBuilder.withRegion(Regions.DEFAULT_REGION)).thenReturn(mockAmazonRDSAsyncClientBuilder);
+    PowerMockito.when(AmazonRDSAsyncClient.asyncBuilder()).thenReturn(mockAmazonRDSAsyncClientBuilder);
+    Mockito.when(mockAmazonRDSAsyncClientBuilder.withRegion(Regions.EU_WEST_1.getName())).thenReturn(mockAmazonRDSAsyncClientBuilder);
     Mockito.when(mockAmazonRDSAsyncClientBuilder.withCredentials(any(AWSCredentialsProvider.class))).thenReturn(mockAmazonRDSAsyncClientBuilder);
     Mockito.when(mockAmazonRDSAsyncClientBuilder.build()).thenReturn(mockAmazonRDSAsync);
     Mockito.when(mockAmazonRDSAsync.describeDBClusters(any(DescribeDBClustersRequest.class))).thenReturn(mockDescribeDBClustersResult);
@@ -114,8 +93,10 @@ public class AuroraReadReplicasDriverConnectTest {
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
 
-    Mockito.verify(mockDbClusterMember, times(2)).isClusterWriter();
-    Mockito.verify(mockDbClusterMember, times(6)).getDBInstanceIdentifier();
+    Mockito.verify(mockDbClusterMember, times(2)).isClusterWriter();  // 2 - because of: Init step + execution steps in stepByStepExecutor
+    Mockito.verify(mockDbClusterMember, times(2)).getDBInstanceIdentifier();
+    Mockito.verify(mockDbInstance, times(2)).getEndpoint();
+    Mockito.verify(mockEndpoint, times(2)).getAddress();
 
   }
 
@@ -129,9 +110,9 @@ public class AuroraReadReplicasDriverConnectTest {
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable task,
-                                                  long initialDelay,
-                                                  long period,
-                                                  TimeUnit unit) {
+        long initialDelay,
+        long period,
+        TimeUnit unit) {
       System.err.println(">>> ADDING TASK: " + task);
       this.task = task;
       return null;

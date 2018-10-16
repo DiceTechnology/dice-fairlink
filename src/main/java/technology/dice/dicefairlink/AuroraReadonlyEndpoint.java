@@ -6,7 +6,7 @@
 package technology.dice.dicefairlink;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.regions.Regions;
+import com.amazonaws.regions.Region;
 import com.amazonaws.services.rds.AmazonRDSAsync;
 import com.amazonaws.services.rds.AmazonRDSAsyncClient;
 import com.amazonaws.services.rds.model.DBCluster;
@@ -17,8 +17,8 @@ import com.amazonaws.services.rds.model.DescribeDBClustersResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
-import technology.dice.dicefairlink.iterators.CyclicIterator;
 
+import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,14 +34,14 @@ public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
   private final Duration pollerInterval;
-  private CyclicIterator<String> replicas;
+  private RandomisedCyclicIterator<String> replicas;
   private String readOnlyEndpoint;
 
   public AuroraReadonlyEndpoint(
       String clusterId,
       AWSCredentialsProvider credentialsProvider,
       Duration pollerInterval,
-      Regions region,
+      Region region,
       ScheduledExecutorService executor) {
     AuroraReplicasFinder finder = new AuroraReplicasFinder(clusterId, credentialsProvider, region);
     this.pollerInterval = pollerInterval;
@@ -54,7 +54,8 @@ public class AuroraReadonlyEndpoint {
     try {
       return this.replicas.next();
     } catch (NoSuchElementException e) {
-      LOGGER.warning(
+      LOGGER.log(
+          Level.WARNING,
           String.format(
               "Could not find any read replicas. Returning the read only endpoint ([%s]) to fallback on Aurora balancing",
               this.readOnlyEndpoint));
@@ -67,11 +68,13 @@ public class AuroraReadonlyEndpoint {
     private final String clusterId;
 
     public AuroraReplicasFinder(
-        String clusterId, AWSCredentialsProvider credentialsProvider, Regions region) {
+        String clusterId, AWSCredentialsProvider credentialsProvider, Region region) {
       this.clusterId = clusterId;
+      LOGGER.log(Level.INFO, "Cluster ID: {0}", clusterId);
+      LOGGER.log(Level.INFO, "AWS Region: {0}", region);
       this.client =
           AmazonRDSAsyncClient.asyncBuilder()
-              .withRegion(region)
+              .withRegion(region.getName())
               .withCredentials(credentialsProvider)
               .build();
     }
@@ -92,48 +95,51 @@ public class AuroraReadonlyEndpoint {
               .collect(Collectors.toList());
       List<String> urls = new ArrayList<>(readReplicas.size());
       for (DBClusterMember readReplica : readReplicas) {
+        final String dbInstanceIdentifier = readReplica.getDBInstanceIdentifier();
         LOGGER.log(
             Level.FINE,
             String.format(
                 "Found read replica in cluster [%s]: [%s])",
-                clusterId, readReplica.getDBInstanceIdentifier()));
+                clusterId,
+                dbInstanceIdentifier));
 
         DescribeDBInstancesResult describeDBInstancesResult =
-            client.describeDBInstances(
-                new DescribeDBInstancesRequest()
-                    .withDBInstanceIdentifier(readReplica.getDBInstanceIdentifier()));
+            client.describeDBInstances(new DescribeDBInstancesRequest()
+                    .withDBInstanceIdentifier(dbInstanceIdentifier));
         if (describeDBInstancesResult.getDBInstances().size() != 1) {
           LOGGER.log(
               Level.WARNING,
               String.format(
                   "Got [%s] database instances for identifier [%s] (member of cluster [%s]). This is unexpected. Skipping.",
                   describeDBInstancesResult.getDBInstances().size(),
-                  readReplica.getDBInstanceIdentifier(),
+                  dbInstanceIdentifier,
                   clusterId));
         } else {
           DBInstance readerInstance = describeDBInstancesResult.getDBInstances().get(0);
           Endpoint endpoint = readerInstance.getEndpoint();
           if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.getDBInstanceStatus())) {
             LOGGER.warning(
-                String.format(
-                    "Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
-                    readReplica.getDBInstanceIdentifier(),
+                String.format("Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
+                    dbInstanceIdentifier,
                     clusterId,
                     readerInstance.getDBInstanceStatus(),
                     ACTIVE_STATUS));
           } else if (endpoint == null) {
-            LOGGER.warning(
+            LOGGER.log(
+                Level.WARNING,
                 String.format(
                     "Found [%s] as a replica for [%s] but it does not have a reachable address. Maybe it is still being created. Skipping",
-                    readReplica.getDBInstanceIdentifier(), clusterId));
-
+                    dbInstanceIdentifier,
+                    clusterId));
           } else {
-            LOGGER.log(
-                Level.FINE,
+            final String endPointAddress = endpoint.getAddress();
+            LOGGER.log(Level.FINE,
                 String.format(
                     "Accepted instance with id [%s] with URL=[%s] to cluster [%s]",
-                    readReplica.getDBInstanceIdentifier(), endpoint.getAddress(), clusterId));
-            urls.add(endpoint.getAddress());
+                    dbInstanceIdentifier,
+                    endPointAddress,
+                    clusterId));
+            urls.add(endPointAddress);
           }
         }
       }
@@ -145,7 +151,8 @@ public class AuroraReadonlyEndpoint {
       try {
         Optional<DBCluster> dbClusterOptional = this.describeCluster();
         if (!dbClusterOptional.isPresent()) {
-          LOGGER.warning(
+          LOGGER.log(
+              Level.WARNING,
               String.format(
                   "Could not retrieve cluster information for cluster [%s]. Will fallback to [%s] until individual members can be retrieved again",
                   clusterId, readOnlyEndpoint));
@@ -153,17 +160,21 @@ public class AuroraReadonlyEndpoint {
         }
         List<String> readerUrls =
             dbClusterOptional.map(cluster -> replicaMembersOf(cluster)).orElse(new ArrayList<>(0));
-        replicas = CyclicIterator.of(readerUrls);
+        replicas = RandomisedCyclicIterator.of(readerUrls);
         if (readerUrls.size() == 0) {
-          LOGGER.warning(
-              String.format(
-                  "No read replicas found for cluster [%s]. Will fallback to [%s] until individual members can be retrieved again",
-                  clusterId, readOnlyEndpoint));
+          LOGGER.log(
+              Level.WARNING,
+              "No read replicas found for cluster [{0}]. Will fallback to [{1}] until individual members can be retrieved again",
+              new Object[] {clusterId, readOnlyEndpoint});
         }
-        LOGGER.info(
-            String.format(
-                "Retrieved [%s] read replicas for cluster id [%s] with. List will be refreshed in [%s] seconds",
-                readerUrls.size(), clusterId, pollerInterval.getSeconds()));
+        if(LOGGER.isLoggable(Level.FINE)) {
+          LOGGER.log(Level.FINE,
+              String.format(
+                  "Retrieved [%s] read replicas for cluster id [%s] with. List will be refreshed in [%s] seconds",
+                  readerUrls.size(),
+                  clusterId,
+                  pollerInterval.getSeconds()));
+        }
       } catch (Exception e) {
         LOGGER.log(
             Level.SEVERE,
@@ -179,16 +190,20 @@ public class AuroraReadonlyEndpoint {
       if (!dbClusterOptional.isPresent()) {
         throw new RuntimeException(
             String.format(
-                "Could not find exactly one cluster with cluster id [%s]", this.clusterId));
+                "Could not find exactly one cluster with cluster id [%s]",
+                this.clusterId));
       }
       DBCluster cluster = dbClusterOptional.get();
       readOnlyEndpoint = cluster.getReaderEndpoint();
       List<String> readerUrls = replicaMembersOf(cluster);
-      replicas = CyclicIterator.of(readerUrls);
-      LOGGER.info(
+      replicas = RandomisedCyclicIterator.of(readerUrls);
+      LOGGER.log(
+          Level.INFO,
           String.format(
               "Initialized driver for cluster id [%s] with [%s] read replicas. List will be refreshed every [%s] seconds",
-              clusterId, readerUrls.size(), pollerInterval.getSeconds()));
+              clusterId,
+              readerUrls.size(),
+              pollerInterval.getSeconds()));
     }
   }
 }

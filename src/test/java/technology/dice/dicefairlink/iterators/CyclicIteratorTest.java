@@ -1,27 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) 2018 - present by Dice Technology Ltd.
  *
- * Copyright 2018 Andrey Lebedenko (andrey.lebedenko@img.com).
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Please see distribution for license.
  */
-
 package technology.dice.dicefairlink.iterators;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,21 +22,21 @@ public class CyclicIteratorTest {
 
   @Test(expected = NoSuchElementException.class)
   public void canCallOfFromEmptyList() {
-    CyclicIterator cyclicIterator = CyclicIterator.of(Collections.EMPTY_LIST);
+    RandomisedCyclicIterator cyclicIterator = RandomisedCyclicIterator.of(Collections.EMPTY_LIST);
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
-    assertThat(cyclicIterator.hasNext()).isEqualTo(false); // fixme should be proper hasNext
+    assertThat(cyclicIterator.hasNext()).isEqualTo(false);
     cyclicIterator.next(); // final step throws
   }
 
   @Test(expected = NoSuchElementException.class)
   public void canCallOfFromEmptySet() {
-    CyclicIterator cyclicIterator = CyclicIterator.of(Collections.EMPTY_SET);
+    RandomisedCyclicIterator cyclicIterator = RandomisedCyclicIterator.of(Collections.EMPTY_SET);
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
-    assertThat(cyclicIterator.hasNext()).isEqualTo(false); // fixme should be proper hasNext
+    assertThat(cyclicIterator.hasNext()).isEqualTo(false);
     cyclicIterator.next(); // final step throws
   }
 
@@ -66,7 +47,7 @@ public class CyclicIteratorTest {
     final List<String> listOfStrings = new LinkedList<>();
     listOfStrings.add(singleElement);
 
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(listOfStrings);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(listOfStrings);
 
     assertThat(cyclicIterator).isNotNull();
     for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
@@ -82,7 +63,7 @@ public class CyclicIteratorTest {
     Set<String> setOfString = new LinkedHashSet<>();
     setOfString.add(singleElement);
 
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(setOfString);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(setOfString);
 
     assertThat(cyclicIterator).isNotNull();
     for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
@@ -101,7 +82,7 @@ public class CyclicIteratorTest {
       listOfStrings.add(singleElement);
     }
 
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(listOfStrings);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(listOfStrings);
 
 
     assertThat(cyclicIterator).isNotNull();
@@ -109,27 +90,6 @@ public class CyclicIteratorTest {
       for(int i = 0; i < size; i++) {
         assertThat(cyclicIterator.hasNext()).isEqualTo(true);
         assertThat(cyclicIterator.next()).isEqualTo(singleElement);
-      }
-    }
-  }
-
-  @Test
-  public void canOperateWithSetOfMultipleElement() {
-    final int size = ThreadLocalRandom.current().nextInt(100, 1000);
-    final Set<String> setOfStrings = new LinkedHashSet<>();
-
-    for(int i = 0; i < size; i++) {
-      setOfStrings.add(elemetPrefix + i);
-    }
-
-    CyclicIterator<String> cyclicIterator = CyclicIterator.<String>of(setOfStrings);
-
-    assertThat(cyclicIterator).isNotNull();
-
-    for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
-      for(int i = 0; i < size; i++) {
-        assertThat(cyclicIterator.hasNext()).isEqualTo(true);
-        assertThat(cyclicIterator.next()).isEqualTo(elemetPrefix + i);
       }
     }
   }
