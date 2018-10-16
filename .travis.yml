@@ -1,0 +1,12 @@
+language: java
+jdk:
+- openjdk8
+sudo: false
+branches:
+  only:
+  - master
+  - "/^feature.*$/"
+  - "/^issue.*$/"
+  - "/^hotfix.*$/"
+script:
+- mvn clean install -q || travis_terminate 1
