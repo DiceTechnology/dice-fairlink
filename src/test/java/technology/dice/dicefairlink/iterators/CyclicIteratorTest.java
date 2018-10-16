@@ -5,8 +5,7 @@
  */
 package technology.dice.dicefairlink.iterators;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -15,8 +14,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
 
 public class CyclicIteratorTest {
   private static final String ELEMENT_PREFIX = "TEST_";
