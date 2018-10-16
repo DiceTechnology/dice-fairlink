@@ -14,6 +14,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomisedCyclicIterator<T> implements Iterator<T> {
+
   private final List<T> elements;
   private Iterator<T> iterator;
 
@@ -35,17 +36,14 @@ public class RandomisedCyclicIterator<T> implements Iterator<T> {
 
   @Override
   public synchronized T next() {
-    if (!this.iterator.hasNext()) {
-      this.iterator = this.elements.iterator();
-      if (!this.iterator.hasNext()) {
+    if (!iterator.hasNext()) {
+      iterator = elements.iterator();
+      if (!iterator.hasNext()) {
         throw new NoSuchElementException();
       }
     }
-    T next = this.iterator.next();
+    T next = iterator.next();
     return next;
   }
 
-  protected Collection<T> getElements() {
-    return this.elements;
-  }
 }
