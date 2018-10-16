@@ -95,6 +95,8 @@ public class AuroraReadonlyEndpoint {
               .collect(Collectors.toList());
       List<String> urls = new ArrayList<>(readReplicas.size());
       for (DBClusterMember readReplica : readReplicas) {
+      	//the only functionally relevant branch of this iteration's branch is the final "else" (replica has an endpoint
+		  // and is ACTIvE_STATUS. . All the other cases are for logging/visibility purposes only
         final String dbInstanceIdentifier = readReplica.getDBInstanceIdentifier();
         LOGGER.log(
             Level.FINE,
