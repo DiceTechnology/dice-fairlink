@@ -22,7 +22,7 @@ public class CyclicIteratorTest {
 
   @Test(expected = NoSuchElementException.class)
   public void canCallOfFromEmptyList() {
-    RansomisedCyclicIterator cyclicIterator = RansomisedCyclicIterator.of(Collections.EMPTY_LIST);
+    RandomisedCyclicIterator cyclicIterator = RandomisedCyclicIterator.of(Collections.EMPTY_LIST);
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
@@ -32,7 +32,7 @@ public class CyclicIteratorTest {
 
   @Test(expected = NoSuchElementException.class)
   public void canCallOfFromEmptySet() {
-    RansomisedCyclicIterator cyclicIterator = RansomisedCyclicIterator.of(Collections.EMPTY_SET);
+    RandomisedCyclicIterator cyclicIterator = RandomisedCyclicIterator.of(Collections.EMPTY_SET);
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
@@ -47,7 +47,7 @@ public class CyclicIteratorTest {
     final List<String> listOfStrings = new LinkedList<>();
     listOfStrings.add(singleElement);
 
-    RansomisedCyclicIterator<String> cyclicIterator = RansomisedCyclicIterator.<String>of(listOfStrings);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(listOfStrings);
 
     assertThat(cyclicIterator).isNotNull();
     for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
@@ -63,7 +63,7 @@ public class CyclicIteratorTest {
     Set<String> setOfString = new LinkedHashSet<>();
     setOfString.add(singleElement);
 
-    RansomisedCyclicIterator<String> cyclicIterator = RansomisedCyclicIterator.<String>of(setOfString);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(setOfString);
 
     assertThat(cyclicIterator).isNotNull();
     for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
@@ -82,7 +82,7 @@ public class CyclicIteratorTest {
       listOfStrings.add(singleElement);
     }
 
-    RansomisedCyclicIterator<String> cyclicIterator = RansomisedCyclicIterator.<String>of(listOfStrings);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(listOfStrings);
 
 
     assertThat(cyclicIterator).isNotNull();

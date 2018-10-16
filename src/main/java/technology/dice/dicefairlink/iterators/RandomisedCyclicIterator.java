@@ -13,19 +13,19 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class RansomisedCyclicIterator<T> implements Iterator<T> {
+public class RandomisedCyclicIterator<T> implements Iterator<T> {
   private final List<T> elements;
   private Iterator<T> iterator;
 
-  protected RansomisedCyclicIterator(Collection<? extends T> collection) {
+  protected RandomisedCyclicIterator(Collection<? extends T> collection) {
     this.elements = new ArrayList<>(collection.size());
     this.elements.addAll(collection);
     Collections.shuffle(elements, ThreadLocalRandom.current());
     this.iterator = this.elements.iterator();
   }
 
-  public static <T> RansomisedCyclicIterator<T> of(Collection<? extends T> collection) {
-    return new RansomisedCyclicIterator<>(collection);
+  public static <T> RandomisedCyclicIterator<T> of(Collection<? extends T> collection) {
+    return new RandomisedCyclicIterator<>(collection);
   }
 
   @Override

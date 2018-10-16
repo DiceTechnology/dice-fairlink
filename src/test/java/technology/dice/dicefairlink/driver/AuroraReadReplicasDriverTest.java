@@ -6,7 +6,6 @@
 package technology.dice.dicefairlink.driver;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import com.amazonaws.services.rds.model.DBClusterNotFoundException;
 import org.junit.Test;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -42,8 +41,8 @@ public class AuroraReadReplicasDriverTest {
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, null); // last call must throw
   }
 
-  @Test(expected = DBClusterNotFoundException.class)
-  public void failToConnectToValidUrl_emptyProperties() throws Exception {
+  @Test(expected = RuntimeException.class)
+  public void failToConnectToValidUrl_emptyProperties_andNoRegionAvailable() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     final Properties emptyProperties = new Properties();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, emptyProperties); // last call must throw

@@ -18,7 +18,7 @@ import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
 
-import technology.dice.dicefairlink.iterators.RansomisedCyclicIterator;
+import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +34,7 @@ public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
   private final Duration pollerInterval;
-  private RansomisedCyclicIterator<String> replicas;
+  private RandomisedCyclicIterator<String> replicas;
   private String readOnlyEndpoint;
 
   public AuroraReadonlyEndpoint(
@@ -160,7 +160,7 @@ public class AuroraReadonlyEndpoint {
         }
         List<String> readerUrls =
             dbClusterOptional.map(cluster -> replicaMembersOf(cluster)).orElse(new ArrayList<>(0));
-        replicas = RansomisedCyclicIterator.of(readerUrls);
+        replicas = RandomisedCyclicIterator.of(readerUrls);
         if (readerUrls.size() == 0) {
           LOGGER.log(
               Level.WARNING,
@@ -196,7 +196,7 @@ public class AuroraReadonlyEndpoint {
       DBCluster cluster = dbClusterOptional.get();
       readOnlyEndpoint = cluster.getReaderEndpoint();
       List<String> readerUrls = replicaMembersOf(cluster);
-      replicas = RansomisedCyclicIterator.of(readerUrls);
+      replicas = RandomisedCyclicIterator.of(readerUrls);
       LOGGER.log(
           Level.INFO,
           String.format(

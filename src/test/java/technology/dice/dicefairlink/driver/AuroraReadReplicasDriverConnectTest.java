@@ -110,9 +110,9 @@ public class AuroraReadReplicasDriverConnectTest {
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable task,
-                                                  long initialDelay,
-                                                  long period,
-                                                  TimeUnit unit) {
+        long initialDelay,
+        long period,
+        TimeUnit unit) {
       System.err.println(">>> ADDING TASK: " + task);
       this.task = task;
       return null;
