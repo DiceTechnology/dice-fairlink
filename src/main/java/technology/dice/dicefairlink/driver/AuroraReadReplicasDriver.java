@@ -88,13 +88,11 @@ public class AuroraReadReplicasDriver implements Driver {
     try {
       System.out.println(">>>> Region: " + properties.getProperty(CLUSTER_REGION));
       final Optional<ParsedUrl> parsedUrlOptional = parseUrlAndCacheDriver(url, properties);
-      if (!parsedUrlOptional.isPresent()) {
-        throw new SQLException(String.format("Invalid url: [%s]", url));
-      }
-      ParsedUrl parsedUrl = parsedUrlOptional.get();
-      return delegates.get(parsedUrl.getDelegateProtocol()).connect(parsedUrl.getDelegateUrl(),
-          properties); // TODO if our info about replica is wrong (say, instance is down), then this
+      final ParsedUrl parsedUrl = parsedUrlOptional.orElseThrow(() -> new SQLException(String.format("Invalid url: [%s]", url)));
+      // TODO if our info about replica is wrong (say, instance is down), then following 'connect'
       // will throw, and we must re-query Aurora Cluster and try again once.
+      return delegates.get(parsedUrl.getDelegateProtocol()).connect(parsedUrl.getDelegateUrl(),
+          properties);
     }
     catch (URISyntaxException ex) {
       throw new SQLException(ex);
@@ -226,7 +224,7 @@ public class AuroraReadReplicasDriver implements Driver {
         // because AWS credentials, region and poll interval properties
         // are only processed once per uri, the driver does not support dynamically changing them
         final Duration pollerInterval = getPollerInterval(properties);
-        final AWSCredentialsProvider credentialsProvider = this.awsAuth(properties);
+        final AWSCredentialsProvider credentialsProvider = awsAuth(properties);
         final AuroraReadonlyEndpoint roEndpoint = new AuroraReadonlyEndpoint(uri.getHost(),
             credentialsProvider, pollerInterval, region, executor);
 
@@ -234,7 +232,7 @@ public class AuroraReadReplicasDriver implements Driver {
         this.auroraClusters.put(uri, roEndpoint);
       }
 
-      final String nextReplica = getNextReplica(this.auroraClusters.get(uri));
+      final String nextReplica = getNextReplica(auroraClusters.get(uri));
       LOGGER.fine(String.format("Obtained [%s] for the next replica to use for cluster [%s]",
           nextReplica, uri.getHost()));
       final String delegatedReplicaUri = new URI(
