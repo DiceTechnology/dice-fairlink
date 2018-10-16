@@ -19,7 +19,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CyclicIteratorTest {
-
   private static final String ELEMENT_PREFIX = "TEST_";
 
   @Test(expected = NoSuchElementException.class)
@@ -49,10 +48,11 @@ public class CyclicIteratorTest {
     final List<String> listOfStrings = new LinkedList<>();
     listOfStrings.add(singleElement);
 
-    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(listOfStrings);
+    RandomisedCyclicIterator<String> cyclicIterator =
+        RandomisedCyclicIterator.<String>of(listOfStrings);
 
     assertThat(cyclicIterator).isNotNull();
-    for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
+    for (int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
       assertThat(cyclicIterator.hasNext()).isEqualTo(true);
       assertThat(cyclicIterator.next()).isEqualTo(singleElement);
     }
@@ -65,10 +65,11 @@ public class CyclicIteratorTest {
     Set<String> setOfString = new LinkedHashSet<>();
     setOfString.add(singleElement);
 
-    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(setOfString);
+    RandomisedCyclicIterator<String> cyclicIterator =
+        RandomisedCyclicIterator.<String>of(setOfString);
 
     assertThat(cyclicIterator).isNotNull();
-    for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
+    for (int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
       assertThat(cyclicIterator.hasNext()).isEqualTo(true);
       assertThat(cyclicIterator.next()).isEqualTo(singleElement);
     }
@@ -80,20 +81,19 @@ public class CyclicIteratorTest {
     final int size = ThreadLocalRandom.current().nextInt(100, 1000);
     final List<String> listOfStrings = new LinkedList<>();
 
-    for(int i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
       listOfStrings.add(singleElement);
     }
 
-    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.<String>of(listOfStrings);
-
+    RandomisedCyclicIterator<String> cyclicIterator =
+        RandomisedCyclicIterator.<String>of(listOfStrings);
 
     assertThat(cyclicIterator).isNotNull();
-    for(int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
-      for(int i = 0; i < size; i++) {
+    for (int cycle = 0; cycle < ThreadLocalRandom.current().nextInt(10, 100); cycle++) {
+      for (int i = 0; i < size; i++) {
         assertThat(cyclicIterator.hasNext()).isEqualTo(true);
         assertThat(cyclicIterator.next()).isEqualTo(singleElement);
       }
     }
   }
-
 }
