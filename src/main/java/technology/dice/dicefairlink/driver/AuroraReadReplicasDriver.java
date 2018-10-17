@@ -11,6 +11,10 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
+import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
+import technology.dice.dicefairlink.DiscoveryAuthMode;
+import technology.dice.dicefairlink.ParsedUrl;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -30,9 +34,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
-import technology.dice.dicefairlink.DiscoveryAuthMode;
-import technology.dice.dicefairlink.ParsedUrl;
 
 public class AuroraReadReplicasDriver implements Driver {
 
@@ -83,7 +84,6 @@ public class AuroraReadReplicasDriver implements Driver {
   @Override
   public Connection connect(final String url, final Properties properties) throws SQLException {
     try {
-      System.out.println(">>>> Region: " + properties.getProperty(CLUSTER_REGION));
       final Optional<ParsedUrl> parsedUrlOptional = parseUrlAndCacheDriver(url, properties);
       final ParsedUrl parsedUrl =
           parsedUrlOptional.orElseThrow(
