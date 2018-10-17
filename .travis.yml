@@ -4,7 +4,6 @@ jdk:
 sudo: false
 branches:
   only:
-  - "/.*/"
   - master
   - "/^feature.*$/"
   - "/^issue.*$/"
