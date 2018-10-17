@@ -5,6 +5,7 @@
  */
 package technology.dice.dicefairlink.driver;
 
+import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -171,31 +172,43 @@ public class AuroraReadReplicasDriver implements Driver {
         return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
       default:
         ENVIRONMENT:
-        // Too sensitive. Uncomment for debug only.
-        // if (LOGGER.isLoggable(Level.FINE)) {
-        // logAwsAccessKeys();
-        // }
+        if (LOGGER.isLoggable(Level.FINE)) {
+          logAwsAccessKeys();
+        }
         return new EnvironmentVariableCredentialsProvider();
     }
   }
 
-  // Too sensitive. Uncomment for debug only.
-  // private void logAwsAccessKeys() {
-  //   final String accessKey =
-  //       getDualEnvironmentVariable(ACCESS_KEY_ENV_VAR, ALTERNATE_ACCESS_KEY_ENV_VAR);
-  //   final String secretKey =
-  //       getDualEnvironmentVariable(SECRET_KEY_ENV_VAR, ALTERNATE_SECRET_KEY_ENV_VAR);
-  //   LOGGER.log(Level.FINE, "accessKey: {0}", accessKey);
-  //   LOGGER.log(Level.FINE, "secretKey: {0}", secretKey);
-  // }
-  // private String getDualEnvironmentVariable(final String primaryVarName,
-  //   final String secondaryVarName) {
-  //   final String primaryVal = System.getenv(primaryVarName);
-  //   if (primaryVal == null) {
-  //     return System.getenv(secondaryVarName);
-  //   }
-  //   return primaryVal;
-  // }
+  private void logAwsAccessKeys() {
+    final String accessKey =
+        getDualEnvironmentVariable(
+            SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR,
+            SDKGlobalConfiguration.ALTERNATE_ACCESS_KEY_ENV_VAR);
+    final String secretKey =
+        getDualEnvironmentVariable(
+            SDKGlobalConfiguration.SECRET_KEY_ENV_VAR,
+            SDKGlobalConfiguration.ALTERNATE_SECRET_KEY_ENV_VAR);
+    LOGGER.log(
+        Level.FINE,
+        String.format(
+            "accessKey: %s**",
+            accessKey != null && accessKey.length() > 4 ? accessKey.substring(0, 3) : ""));
+    LOGGER.log(
+        Level.FINE,
+        String.format(
+            "secretKey: %s**",
+            secretKey != null && secretKey.length() > 4 ? secretKey.substring(0, 3) : ""));
+  }
+
+  private String getDualEnvironmentVariable(
+      final String primaryVarName, final String secondaryVarName) {
+    final String primaryVal = System.getenv(primaryVarName);
+    if (primaryVal == null) {
+      return System.getenv(secondaryVarName);
+    }
+    return primaryVal;
+  }
+
   private Optional<ParsedUrl> parseUrlAndCacheDriver(final String url, final Properties properties)
       throws SQLException, URISyntaxException {
     LOGGER.log(Level.FINE, "URI: {0}", url);
