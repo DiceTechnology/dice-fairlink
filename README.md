@@ -4,7 +4,7 @@ dice-fairlink is a JDBC driver designed to connect to the read replicas of an AW
 The driver will periodically obtain a description of the cluster and dispatch connections to each read replica
 on round-robin fashion.
 
-# Why do we need dice-fairlink (TL/DR) version?
+# Why do we need dice-fairlink (TL/DR version)?
 Because in many cases Aurora will not evenly distribute the connections amongst all the available read replicas.
 [image]
 
