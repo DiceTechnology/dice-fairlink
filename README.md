@@ -15,8 +15,8 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 - Change your connection string's host to the name of your AWS Aurora cluster 
 
 # Why do we need dice-fairlink ?
-Using AWS Aurora clusters with database connection pools is an possible use case. A possible configuration is to point
-a connection pool to the cluster's read endpoint. AWS claims ([here](https://aws.amazon.com/blogs/aws/new-reader-endpoint-for-amazon-aurora-load-balancing-higher-availability/),
+Using AWS Aurora clusters with database connection pools is a possible use case. A possible configuration is to point
+a connection pool to the cluster's read-only endpoint. AWS claims ([here](https://aws.amazon.com/blogs/aws/new-reader-endpoint-for-amazon-aurora-load-balancing-higher-availability/),
 [here](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Overview.Endpoints.html), and
 [here](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_Aurora.html#Aurora.Overview.Endpoints)) 
 that Aurora will send the new connections to different read replicas in a quasi-round-robin fashion. It is well documented on
