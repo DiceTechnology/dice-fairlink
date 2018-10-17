@@ -19,7 +19,7 @@
     <scm>
         <connection>scm:git:git@github.com:DiceTechnology/dice-fairlink.git</connection>
         <developerConnection>scm:git:ssh://github.com:DiceTechnology/dice-fairlink.git</developerConnection>
-        <url>http://github.com/DiceTechnology/dice-where/tree/master</url>
+        <url>http://github.com/DiceTechnology/dice-fairlink/tree/master</url>
     </scm>
 
     <licenses>
@@ -197,9 +197,9 @@
                     <snapshots>
                         <enabled>false</enabled>
                     </snapshots>
-                    <id>bintray-dicetechnology-dice-where</id>
+                    <id>bintray-dicetechnology-dice-fairlink</id>
                     <name>bintray</name>
-                    <url>https://dl.bintray.com/dicetechnology/dice-where</url>
+                    <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
                 </repository>
             </repositories>
             <pluginRepositories>
@@ -207,9 +207,9 @@
                     <snapshots>
                         <enabled>false</enabled>
                     </snapshots>
-                    <id>bintray-dicetechnology-dice-where</id>
+                    <id>bintray-dicetechnology-dice-fairlink</id>
                     <name>bintray-plugins</name>
-                    <url>https://dl.bintray.com/dicetechnology/dice-where</url>
+                    <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
                 </pluginRepository>
             </pluginRepositories>
             <build>
