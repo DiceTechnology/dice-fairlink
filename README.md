@@ -14,6 +14,29 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 - Add `auroraro` as a jdbc sub-protocol to your connection string's schema
 - Change your connection string's host to the name of your AWS Aurora cluster 
 
+# Usage Examples
+
+dice-fairlink implements a generic sub-protocol of any existing jdbc protocol (psql,mysql,etc). The host section
+of the URL should be the cluster identifier and not the hostname of any cluster or instance endpoint.
+The driver will accept urls in the form `jdbc:XXXX:auroraro` and delegate the actual handling of the connection
+to the driver of the protocol `XXXX` (which needs to be loadable by the JVM classloader).
+
+## Example:
+
+In a cluster named `my-cluster` with three read replicas `my-cluster-r1`, `my-cluster-r2` and, `my-cluster-r3`, and 
+the following connection string
+```java
+String connectionString = "jdbc:mysql:auroraro://my-cluster/my-schema";
+```
+dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
+and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
+
+Only replicas in the `available` state will be used. 
+
+In this example dice-fairlink will use the available mysql driver to establish the connection to the read replica.
+
+Dynamic changes to the cluster (node promotions, removals and additions) are automatically detected.
+
 # Why do we need dice-fairlink ?
 Using AWS Aurora clusters with database connection pools is a possible use case. A possible configuration is to point
 a connection pool to the cluster's read-only endpoint. AWS claims ([here](https://aws.amazon.com/blogs/aws/new-reader-endpoint-for-amazon-aurora-load-balancing-higher-availability/),
@@ -80,29 +103,6 @@ taking into account how busy each replica is. It simply returns the read replica
 # Installation
 
 WIP
-
-# Usage Examples
-
-dice-fairlink implements a generic sub-protocol of any existing jdbc protocol (psql,mysql,etc). The host section
-of the URL should be the cluster identifier and not the hostname of any cluster or instance endpoint.
-The driver will accept urls in the form `jdbc:XXXX:auroraro` and delegate the actual handling of the connection
-to the driver of the protocol `XXXX` (which needs to be loadable by the JVM classloader).
-
-## Example:
-
-In a cluster named `my-cluster` with three read replicas `my-cluster-r1`, `my-cluster-r2` and, `my-cluster-r3`, and 
-the following connection string
-```java
-String connectionString = "jdbc:mysql:auroraro://my-cluster/my-schema";
-```
-dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
-and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
-
-Only replicas in the `available` state will be used. 
-
-In this example dice-fairlink will use the available mysql driver to establish the connection to the read replica.
-
-Dynamic changes to the cluster (node promotions, removals and additions) are automatically detected.
 
 
 # Driver properties
