@@ -10,3 +10,18 @@ branches:
   - "/^hotfix.*$/"
 script:
 - mvn clean install -q || travis_terminate 1
+before_install:
+- openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
+  -in travis.gpg.pem.enc -out travis.gpg.pem -d
+- openssl aes-256-cbc -K $encrypted_9dd2761de049_key -iv $encrypted_9dd2761de049_iv
+  -in travis.gpg.pem.enc -out travis.gpg.pem -d
+- gpg --import travis.gpg.pem
+env:
+  global:
+  - secure: ZHYgUFa/1eKi2NeaUFfzaROzyO1207qWa5se4CmGOCdKLCGWm7RessPhkQo7NPiSPv8X/iLvj7OgZa14+TeUhI3YLudbAxuUnDJPt6k3Q7lpFAGG5EZpaunjEc0SUOL455punXPsvz0/NzmaoRYt7t8/rkKrDDd6iFhA9h1X/iiVyJTzFxrPPIracdyfWddqz56hLJFj4t12ADvO58XPthYX43OWPg0rFDa+sXIjW4t8vKq2ep+fs500fqZk1HF/VOH+Fo7O4m54Ppf4HeKCEHZNmaM539gvfITJKI1GDM6XtWQVKVzPpTDmmt9wZVb6iB7w/UZFN6Y1kxKX7lZU0sO1sjQYe70VzXbsDPD9pYQDCCbQLRayK0Rq5aW6CgXDf7rFSYUpMt9dfRUcFxylWwibeXpJaVCJRwtBW7bdzzfzYScmXY1b6wNM5Mh/0yrY2lJ7xNd6ldwmUjKXbzCBU4/vgvt3vMEABp1Ey8YMDUCI0fb+geHNsqVsdJ9IjVtTHzNjXCIHglYFtYIwl5+6BavvwOyxAWggFVmnj7hboujtSLTf7GDhJgsaPTsRvNtOWFKZ5/NWX+5Rv6xj9BD5niR+phhbo0sE3R7ZefLIlbSh5vgnNwMMeTtdmr+nYwolqphruHDKSYF4iYtHjm1EqNlp7lml781k52sH5PmD9is=
+  - secure: rQx6kiXgxOKfJODHW73X4DwMkrKLZRRhqQFsLvL8FvspqEZ7nDQ6wPNaa3QVkuFkaQVHZQ6b6cTUC9Y+SEXLFqpygyrkYkFq/FJODdFbVRGJ8cD30CsH5+CMQpDizmM1VbVXO4IDvMADoUNINCRpuqK6IrBIHShgpJTTMIUz0iNy7VLE2ck/iNRKk0vPwE7UTxApfn2GAoY1nFv3zJyKEyV+LS5HpQmKku1C7DZDxxXtzFPeLZtRchRafzUTPj9X+cIINE6dqL+JB9gafimvKyoP54icLTEEooRrPZNGT41xdLCQYH3NX8ZKynvBFZhtr1mGIC+OwqU+Byi7HPG8THo0dV9lw3gEc2E6YhYw1AhwzMFryQC7AGTSF8jtXWUg5PyRrbo091xXEXjOSUTcNKI5H7xbQETBx74hfU1xBcBC4w7TN1O+FySm1Pb/mz7hNwS2Om6+IvO2Cqc36v7d/RxeffTSu8QdbZw3YSnvo9c/0nT6KNZjpFgWsqFrs9bLyVHpLsWjUr7TH3yTzVGX0XGoQOMMTLd2Voxxnk2gJ1dJA5ecf3XZWT10q+4OKIbHORlKHT+0TesfG+YEtgqO+uEDIxgGzwJkxQWmwx4cpVv2vJmpQxHduOuQIDfeGqzHR3x/WYG5bXc4CCE+hBaIszhQzgP9MCsHwVqMIig76cg=
+cache:
+  directories:
+  - "~/.m2/repository"
+after_success:
+- "./cd/deploy.sh"
