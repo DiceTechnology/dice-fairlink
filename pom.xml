@@ -7,7 +7,7 @@
 
     <groupId>technology.dice.open</groupId>
     <artifactId>dice-fairlink</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>dice-fairlink</name>
 
     <packaging>jar</packaging>
@@ -19,7 +19,7 @@
     <scm>
         <connection>scm:git:git@github.com:DiceTechnology/dice-fairlink.git</connection>
         <developerConnection>scm:git:ssh://github.com:DiceTechnology/dice-fairlink.git</developerConnection>
-        <url>http://github.com/DiceTechnology/dice-where/tree/master</url>
+        <url>http://github.com/DiceTechnology/dice-fairlink/tree/master</url>
     </scm>
 
     <licenses>
@@ -56,13 +56,10 @@
 
     <distributionManagement>
         <repository>
-            <id>s3.release</id>
-            <url>s3://repo.imggaming.com/master-builds</url>
+            <id>bintray-dicetechnology-dice-fairlink</id>
+            <name>dicetechnology-dice-fairlink</name>
+            <url>https://api.bintray.com/maven/dicetechnology/dice-fairlink/dice-fairlink/;publish=1</url>
         </repository>
-        <snapshotRepository>
-            <id>s3.snapshot</id>
-            <url>s3://repo.imggaming.com/snapshots</url>
-        </snapshotRepository>
     </distributionManagement>
 
     <dependencies>
@@ -150,4 +147,89 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>build-extras</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.4</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.3</version>
+                        <configuration>
+                            <sourceFileExcludes>
+                                <sourceFileExclude>**/protobuf/*.java</sourceFileExclude>
+                            </sourceFileExcludes>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>bintray</id>
+            <repositories>
+                <repository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>bintray-dicetechnology-dice-fairlink</id>
+                    <name>bintray</name>
+                    <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>bintray-dicetechnology-dice-fairlink</id>
+                    <name>bintray-plugins</name>
+                    <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
+                </pluginRepository>
+            </pluginRepositories>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
