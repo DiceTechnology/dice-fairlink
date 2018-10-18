@@ -1,0 +1,21 @@
+<settings>
+	<profiles>
+		<profile>
+			<id>dice</id>
+			<repositories>
+				<repository>
+					<id>dice-repo</id>
+					<url>s3://dge-artifacts/</url>
+				</repository>
+				<repository>
+					<id>dice-external-repo</id>
+					<url>s3://dge-artifacts/ext</url>
+				</repository>
+			</repositories>
+		</profile>
+	</profiles>
+
+	<activeProfiles>
+		<activeProfile>dice</activeProfile>
+	</activeProfiles>
+</settings>
