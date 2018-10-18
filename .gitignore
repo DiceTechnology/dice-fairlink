@@ -13,7 +13,6 @@ hs_err_pid*
 *.og
 target/
 .idea/
-bin/
 *.iml
 .DS_Store
 *.mmdb
