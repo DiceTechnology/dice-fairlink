@@ -10,13 +10,13 @@ function slack {
 }
 
 # Get VERSION from top level POM
-VERSION_POM=$( ./mvnw help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
+VERSION_POM=$( mvn help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
 
 # Get ARTIFACT_ID from top level POM
-ARTIFACT_ID_POM=$( ./mvnw help:evaluate -Dexpression=project.artifactId | grep -v '\[.*' | tail -n1 )
+ARTIFACT_ID_POM=$( mvn help:evaluate -Dexpression=project.artifactId | grep -v '\[.*' | tail -n1 )
 
 # Setup Git Configuration
 git config --global user.email "build@travis-ci.com"
 git config --global user.name "Travis CI"
 
-./mvnw scm:tag && slack "Tagged $ARTIFACT_ID_POM with version $VERSION_POM"
+mvn scm:tag && slack "Tagged $ARTIFACT_ID_POM with version $VERSION_POM"

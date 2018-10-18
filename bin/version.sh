@@ -36,7 +36,7 @@ else
 fi
 
 # Get MAJOR and MINOR from top level POM
-VERSION_POM=$( ./mvnw help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
+VERSION_POM=$( mvn help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
 VERSION_POM_BITS=(${VERSION_POM//./ })
 
 MAJOR=${VERSION_POM_BITS[0]}
@@ -51,4 +51,4 @@ else
 fi
 
 # Set the new version in POM
-./mvnw versions:set -DgenerateBackupPoms=false -DnewVersion="${MAJOR}.${MINOR}.${PATCH}"
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion="${MAJOR}.${MINOR}.${PATCH}"

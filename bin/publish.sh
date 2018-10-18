@@ -13,10 +13,10 @@ function slack {
 if [[ $TRAVIS_PULL_REQUEST != false ]] || [[ "$TRAVIS_BRANCH" = "master" ]]
 then
   # Get VERSION from top level POM
-  VERSION_POM=$( ./mvnm help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
+  VERSION_POM=$( mvn help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
 
   # Get ARTIFACT_ID from top level POM
-  ARTIFACT_ID_POM=$( ./mvnm help:evaluate -Dexpression=project.artifactId | grep -v '\[.*' | tail -n1 )
+  ARTIFACT_ID_POM=$( mvn help:evaluate -Dexpression=project.artifactId | grep -v '\[.*' | tail -n1 )
 
-  ./mvnm deploy -DskipTests && slack "Published $ARTIFACT_ID_POM $VERSION_POM"
+  mvn deploy -DskipTests && slack "Published $ARTIFACT_ID_POM $VERSION_POM"
 fi

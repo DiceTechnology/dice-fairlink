@@ -26,9 +26,9 @@ function slack {
 }
 
 # Get VERSION from top level POM
-VERSION_POM=$( ./mvnw help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
+VERSION_POM=$( mvn help:evaluate -Dexpression=project.version | grep -v '\[.*' | tail -n1 )
 
 # Get ARTIFACT_ID from top level POM
-ARTIFACT_ID_POM=$( ./mvnw help:evaluate -Dexpression=project.artifactId | grep -v '\[.*' | tail -n1 )
+ARTIFACT_ID_POM=$( mvn help:evaluate -Dexpression=project.artifactId | grep -v '\[.*' | tail -n1 )
 
 deploy prod $VERSION_POM $ARTIFACT_ID_POM && slack "Deployed $ARTIFACT_ID_POM with version $VERSION_POM"
