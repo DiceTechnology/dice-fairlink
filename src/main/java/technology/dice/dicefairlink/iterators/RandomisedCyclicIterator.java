@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Predicate;
 
 public class RandomisedCyclicIterator<T> implements Iterator<T> {
 
@@ -32,6 +33,17 @@ public class RandomisedCyclicIterator<T> implements Iterator<T> {
   @Override
   public boolean hasNext() {
     return !elements.isEmpty();
+  }
+
+  public boolean hasSameContent(final Collection<T> externalElements) {
+    if (externalElements == null || externalElements.size() != elements.size()) {
+      return false;
+    }
+    return externalElements.stream().unordered().parallel().allMatch(foundInInternalCollection());
+  }
+
+  private Predicate<T> foundInInternalCollection() {
+    return (T externalElement) -> elements.contains(externalElement);
   }
 
   @Override

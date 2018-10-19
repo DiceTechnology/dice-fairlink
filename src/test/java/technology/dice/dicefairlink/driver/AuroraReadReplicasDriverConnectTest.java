@@ -117,6 +117,8 @@ public class AuroraReadReplicasDriverConnectTest {
     Mockito.verify(mockDbClusterMember, times(2)).getDBInstanceIdentifier();
     Mockito.verify(mockDbInstance, times(2)).getEndpoint();
     Mockito.verify(mockEndpoint, times(2)).getAddress();
+
+    PowerMock.verifyAll();
   }
 
   public static class StepByStepExecutor extends ScheduledThreadPoolExecutor {
@@ -130,13 +132,11 @@ public class AuroraReadReplicasDriverConnectTest {
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(
         Runnable task, long initialDelay, long period, TimeUnit unit) {
-      System.err.println(">>> ADDING TASK: " + task);
       this.task = task;
       return null;
     }
 
     public void step() {
-      System.err.println(">>> RUNNING TASK: " + task);
       task.run();
     }
   }

@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
@@ -81,7 +82,9 @@ public class AuroraReadReplicasDriver implements Driver {
     return matches;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Connection connect(final String url, final Properties properties) throws SQLException {
     try {
@@ -99,31 +102,41 @@ public class AuroraReadReplicasDriver implements Driver {
     }
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int getMajorVersion() {
     return Constants.AURORA_RO_MAJOR_VERSION;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int getMinorVersion() {
     return Constants.AURORA_RO_MINOR_VERSION;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Logger getParentLogger() {
     return LOGGER.getParent();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public DriverPropertyInfo[] getPropertyInfo(String url, Properties properties) {
     return new DriverPropertyInfo[0];
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean jdbcCompliant() {
     return false;
@@ -149,14 +162,14 @@ public class AuroraReadReplicasDriver implements Driver {
     }
     throw new RuntimeException(
         "Region is null. Please either provide property ["
-            + CLUSTER_REGION
-            + "] or set the environment variable [AWS_DEFAULT_REGION]");
+        + CLUSTER_REGION
+        + "] or set the environment variable [AWS_DEFAULT_REGION]");
   }
 
   private AWSCredentialsProvider awsAuth(Properties properties) throws SQLException {
     DiscoveryAuthMode authMode =
         DiscoveryAuthMode.fromStringInsensitive(
-                properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "environment"))
+            properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "environment"))
             .orElse(DiscoveryAuthMode.ENVIRONMENT);
     LOGGER.log(Level.FINE, "authMode: {0}", authMode);
     switch (authMode) {
@@ -244,23 +257,23 @@ public class AuroraReadReplicasDriver implements Driver {
           String.format(
               "Obtained [%s] for the next replica to use for cluster [%s]",
               nextReplica, uri.getHost()));
-      final String delegatedReplicaUri =
-          new URI(
-                  String.format("%s:%s", JDBC_PREFIX, delegate),
-                  uri.getUserInfo(),
-                  nextReplica,
-                  uri.getPort(),
-                  uri.getPath(),
-                  uri.getQuery(),
-                  uri.getFragment())
-              .toASCIIString();
+      final String prefix = String.format("%s:%s", JDBC_PREFIX, delegate);
+      final String delegatedReplicaUri = (nextReplica.startsWith(prefix)) ? nextReplica : new URI(
+          prefix,
+          uri.getUserInfo(),
+          nextReplica,
+          uri.getPort(),
+          uri.getPath(),
+          uri.getQuery(),
+          uri.getFragment())
+          .toASCIIString();
       LOGGER.log(Level.INFO, "URI to connect to: {0}", delegatedReplicaUri);
 
       addDriverForDelegate(delegate, delegatedReplicaUri);
 
       return Optional.of(new ParsedUrl(delegate, delegatedReplicaUri));
-    } catch (URISyntaxException e) {
-      LOGGER.log(Level.SEVERE, "Can not use URI: " + clusterURI, e);
+    } catch (URISyntaxException | NoSuchElementException e) {
+      LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + clusterURI, e);
       return Optional.empty();
     }
   }
@@ -273,7 +286,7 @@ public class AuroraReadReplicasDriver implements Driver {
 
   private synchronized String getNextReplica(final AuroraReadonlyEndpoint replicaEndPoint) {
     String nextReplica = replicaEndPoint.getNextReplica();
-    if (nextReplica.equals(lastReplica.get())) {
+    if (nextReplica != null && nextReplica.equals(lastReplica.get())) {
       nextReplica = replicaEndPoint.getNextReplica();
     }
     lastReplica.set(nextReplica);
