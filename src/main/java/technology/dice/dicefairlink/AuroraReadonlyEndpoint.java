@@ -74,23 +74,23 @@ public class AuroraReadonlyEndpoint {
       this.clusterId = clusterId;
       LOGGER.log(Level.INFO, "Cluster ID: {0}", clusterId);
       LOGGER.log(Level.INFO, "AWS Region: {0}", region);
-      this.client
-          = AmazonRDSAsyncClient.asyncBuilder()
+      this.client =
+           AmazonRDSAsyncClient.asyncBuilder()
               .withRegion(region.getName())
               .withCredentials(credentialsProvider)
               .build();
     }
 
     private Optional<DBCluster> describeCluster() {
-      DescribeDBClustersResult describeDBClustersResult
-          = client.describeDBClusters(
+      DescribeDBClustersResult describeDBClustersResult =
+          client.describeDBClusters(
               new DescribeDBClustersRequest().withDBClusterIdentifier(this.clusterId));
       return describeDBClustersResult.getDBClusters().stream().findFirst();
     }
 
     private List<String> replicaMembersOf(DBCluster cluster) {
-      List<DBClusterMember> readReplicas
-          = cluster
+      List<DBClusterMember> readReplicas =
+          cluster
               .getDBClusterMembers()
               .stream()
               .filter(member -> !member.isClusterWriter())
@@ -106,8 +106,8 @@ public class AuroraReadonlyEndpoint {
             String.format(
                 "Found read replica in cluster [%s]: [%s])", clusterId, dbInstanceIdentifier));
 
-        DescribeDBInstancesResult describeDBInstancesResult
-            = client.describeDBInstances(
+        DescribeDBInstancesResult describeDBInstancesResult =
+            client.describeDBInstances(
                 new DescribeDBInstancesRequest().withDBInstanceIdentifier(dbInstanceIdentifier));
         if (describeDBInstancesResult.getDBInstances().size() != 1) {
           LOGGER.log(
@@ -160,8 +160,8 @@ public class AuroraReadonlyEndpoint {
                   clusterId, readOnlyEndpoint));
           return;
         }
-        List<String> readerUrls
-            = dbClusterOptional.map(cluster -> replicaMembersOf(cluster)).orElse(new ArrayList<>(0));
+        List<String> readerUrls =
+            dbClusterOptional.map(cluster -> replicaMembersOf(cluster)).orElse(new ArrayList<>(0));
         if (replicas.hasSameContent(readerUrls)) {
           return;
         }
