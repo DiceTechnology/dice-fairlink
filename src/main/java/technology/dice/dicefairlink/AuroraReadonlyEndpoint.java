@@ -31,7 +31,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class AuroraReadonlyEndpoint {
-
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
   private final Duration pollerInterval;
@@ -65,7 +64,6 @@ public class AuroraReadonlyEndpoint {
   }
 
   public class AuroraReplicasFinder implements Runnable {
-
     private final AmazonRDSAsync client;
     private final String clusterId;
 
@@ -75,7 +73,7 @@ public class AuroraReadonlyEndpoint {
       LOGGER.log(Level.INFO, "Cluster ID: {0}", clusterId);
       LOGGER.log(Level.INFO, "AWS Region: {0}", region);
       this.client =
-           AmazonRDSAsyncClient.asyncBuilder()
+          AmazonRDSAsyncClient.asyncBuilder()
               .withRegion(region.getName())
               .withCredentials(credentialsProvider)
               .build();
