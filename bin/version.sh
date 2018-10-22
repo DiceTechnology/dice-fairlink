@@ -5,7 +5,7 @@
 #       - master branch, will be based on latest tag like MAJOR.MINOR.PREVIOUS_PATCH and return PREVIOUS_PATCH + 1
 #       - other branches, will be the Git Hash
 
-set -x
+#set -x
 
 # Get PATCH from git latest tag starting with major.minor, otherwise 0
 function getPatchFromGitTag {

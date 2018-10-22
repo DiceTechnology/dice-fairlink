@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script to tag the GIT repository with a specific version taken from the POM file
 
-#set -x
+set -x
 
 function slack {
   local SLACK_URL="https://hooks.slack.com/services/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";
