@@ -8,15 +8,15 @@ package technology.dice.dicefairlink.iterators;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import java.util.ArrayList;
 
 public class RandomisedCyclicIteratorTest {
@@ -27,9 +27,12 @@ public class RandomisedCyclicIteratorTest {
 
   private int numberOfElementsToTest = -1;
 
+  @Rule public TestName testName = new TestName();
+
   @Before
   public void setUp() {
     numberOfElementsToTest = ThreadLocalRandom.current().nextInt(MIN_SIZE, MAX_SIZE);
+    System.out.println("Running test " + testName.getMethodName() + " with numberOfElementsToTest = " + numberOfElementsToTest);
   }
 
   @Test(expected = NoSuchElementException.class)
@@ -38,7 +41,7 @@ public class RandomisedCyclicIteratorTest {
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
-    assertThat(cyclicIterator.hasNext()).isEqualTo(false);
+    assertThat(cyclicIterator.hasNext()).isFalse();
     cyclicIterator.next(); // final step throws
   }
 
@@ -48,7 +51,7 @@ public class RandomisedCyclicIteratorTest {
 
     Assertions.assertThat(cyclicIterator).isNotNull();
 
-    assertThat(cyclicIterator.hasNext()).isEqualTo(false);
+    assertThat(cyclicIterator.hasNext()).isFalse();
     cyclicIterator.next(); // final step throws
   }
 
@@ -64,24 +67,7 @@ public class RandomisedCyclicIteratorTest {
 
     assertThat(cyclicIterator).isNotNull();
     for (int cycle = 0; cycle < numberOfElementsToTest; cycle++) {
-      assertThat(cyclicIterator.hasNext()).isEqualTo(true);
-      assertThat(cyclicIterator.next()).isEqualTo(singleElement);
-    }
-  }
-
-  @Test
-  public void canOperateWithSetOfSingleElement() {
-    final String singleElement = ELEMENT_PREFIX + "_1";
-
-    Set<String> setOfString = new LinkedHashSet<>();
-    setOfString.add(singleElement);
-
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(setOfString);
-
-    assertThat(cyclicIterator).isNotNull();
-    for (int cycle = 0; cycle < numberOfElementsToTest; cycle++) {
-      assertThat(cyclicIterator.hasNext()).isEqualTo(true);
+      assertThat(cyclicIterator.hasNext()).isTrue();
       assertThat(cyclicIterator.next()).isEqualTo(singleElement);
     }
   }
@@ -101,14 +87,14 @@ public class RandomisedCyclicIteratorTest {
     assertThat(cyclicIterator).isNotNull();
     for (int cycle = 0; cycle < numberOfElementsToTest; cycle++) {
       for (int i = 0; i < numberOfElementsToTest; i++) {
-        assertThat(cyclicIterator.hasNext()).isEqualTo(true);
+        assertThat(cyclicIterator.hasNext()).isTrue();
         assertThat(cyclicIterator.next()).isEqualTo(singleElement);
       }
     }
   }
 
   @Test
-  public void canCompareInetrnalCollectionToExternal_overSameCollectionShuffeled() {
+  public void canCompareInetrnalShffeledCollectionToExternal() {
     List<String> originalElements = new ArrayList<>(numberOfElementsToTest);
     for (int i = 1; i <= numberOfElementsToTest; i++) {
       originalElements.add(ELEMENT_PREFIX + i);
@@ -117,9 +103,9 @@ public class RandomisedCyclicIteratorTest {
     RandomisedCyclicIterator<String> cyclicIterator
         = RandomisedCyclicIterator.<String>of(originalElements);
 
-    assertThat(cyclicIterator.hasSameContent(originalElements)).isEqualTo(true);
+    assertThat(cyclicIterator.hasSameContent(originalElements)).isTrue();
     Collections.shuffle(originalElements);
-    assertThat(cyclicIterator.hasSameContent(originalElements)).isEqualTo(true);
+    assertThat(cyclicIterator.hasSameContent(originalElements)).isTrue();
   }
 
   @Test
@@ -134,7 +120,7 @@ public class RandomisedCyclicIteratorTest {
     RandomisedCyclicIterator<String> cyclicIterator
         = RandomisedCyclicIterator.<String>of(originalElements);
 
-    assertThat(cyclicIterator.hasSameContent(copyOfOriginalElements)).isEqualTo(true);
+    assertThat(cyclicIterator.hasSameContent(copyOfOriginalElements)).isTrue();
   }
 
   @Test
@@ -150,7 +136,7 @@ public class RandomisedCyclicIteratorTest {
     RandomisedCyclicIterator<String> cyclicIterator
         = RandomisedCyclicIterator.<String>of(originalElements);
 
-    assertThat(cyclicIterator.hasSameContent(differentElements)).isEqualTo(false);
+    assertThat(cyclicIterator.hasSameContent(differentElements)).isFalse();
   }
 
   @Test
@@ -166,7 +152,7 @@ public class RandomisedCyclicIteratorTest {
     RandomisedCyclicIterator<String> cyclicIterator
         = RandomisedCyclicIterator.<String>of(originalElements);
 
-    assertThat(cyclicIterator.hasSameContent(differentElements)).isEqualTo(false);
+    assertThat(cyclicIterator.hasSameContent(differentElements)).isFalse();
   }
 
   @Test
@@ -179,6 +165,6 @@ public class RandomisedCyclicIteratorTest {
     RandomisedCyclicIterator<String> cyclicIterator
         = RandomisedCyclicIterator.<String>of(originalElements);
 
-    assertThat(cyclicIterator.hasSameContent(null)).isEqualTo(false);
+    assertThat(cyclicIterator.hasSameContent(null)).isFalse();
   }
 }

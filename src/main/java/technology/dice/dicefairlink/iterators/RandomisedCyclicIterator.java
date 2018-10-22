@@ -20,9 +20,8 @@ public class RandomisedCyclicIterator<T> implements Iterator<T> {
   private Iterator<T> iterator;
 
   protected RandomisedCyclicIterator(Collection<? extends T> collection) {
-    this.elements = new ArrayList<>(collection.size());
-    this.elements.addAll(collection);
-    Collections.shuffle(elements, ThreadLocalRandom.current());
+    this.elements = new ArrayList<>(collection);
+    Collections.shuffle(this.elements, ThreadLocalRandom.current());
     this.iterator = this.elements.iterator();
   }
 
@@ -39,7 +38,7 @@ public class RandomisedCyclicIterator<T> implements Iterator<T> {
     if (externalElements == null || externalElements.size() != elements.size()) {
       return false;
     }
-    return externalElements.stream().unordered().parallel().allMatch(foundInInternalCollection());
+    return externalElements.stream().unordered().allMatch(foundInInternalCollection());
   }
 
   private Predicate<T> foundInInternalCollection() {

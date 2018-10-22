@@ -44,6 +44,8 @@ public class AuroraReadReplicasDriverConnectSameListTest {
       "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_LOW_JDBC_URL_A =
       "jdbc:mysql://replica-1-ro:123/db?param1=123&param2=true&param3=abc";
+  private static final String VALID_LOW_JDBC_URL_B =
+      "jdbc:mysql://replica-2-ro:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_ENDPOINT_ADDRESS_A = "replica-1-ro";
   private static final String VALID_ENDPOINT_ADDRESS_B = "replica-2-ro";
 
@@ -86,6 +88,7 @@ public class AuroraReadReplicasDriverConnectSameListTest {
     DriverManager.registerDriver(EasyMock.anyObject(AuroraReadReplicasDriver.class));
     PowerMock.expectLastCall();
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL_A)).andReturn(mockDriver);
+    EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL_B)).andReturn(mockDriver);
     PowerMock.replay(DriverManager.class);
 
     PowerMockito.mockStatic(AmazonRDSAsyncClient.class);

@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ public class AuroraReadonlyEndpoint {
   private final Duration pollerInterval;
   private RandomisedCyclicIterator<String> replicas;
   private String readOnlyEndpoint;
+  private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
   public AuroraReadonlyEndpoint(
       String clusterId,
@@ -52,7 +54,12 @@ public class AuroraReadonlyEndpoint {
 
   public String getNextReplica() {
     try {
-      return this.replicas.next();
+      String nextReplica = replicas.next();
+      if (nextReplica != null && nextReplica.equals(lastReplica.get())) {
+        nextReplica = replicas.next();
+      }
+      lastReplica.set(nextReplica);
+      return nextReplica;
     } catch (NoSuchElementException e) {
       LOGGER.log(
           Level.WARNING,

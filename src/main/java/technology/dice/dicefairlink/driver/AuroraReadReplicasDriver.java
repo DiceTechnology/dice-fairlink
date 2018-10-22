@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -55,7 +54,6 @@ public class AuroraReadReplicasDriver implements Driver {
   private final Map<URI, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
 
   private final ScheduledExecutorService executor;
-  private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
   static {
     try {
@@ -252,7 +250,7 @@ public class AuroraReadReplicasDriver implements Driver {
         this.auroraClusters.put(uri, roEndpoint);
       }
 
-      final String nextReplica = getNextReplica(auroraClusters.get(uri));
+      final String nextReplica = auroraClusters.get(uri).getNextReplica();
       LOGGER.fine(
           String.format(
               "Obtained [%s] for the next replica to use for cluster [%s]",
@@ -282,15 +280,6 @@ public class AuroraReadReplicasDriver implements Driver {
     if (!this.delegates.containsKey(delegate)) {
       this.delegates.put(delegate, DriverManager.getDriver(stringURI));
     }
-  }
-
-  private synchronized String getNextReplica(final AuroraReadonlyEndpoint replicaEndPoint) {
-    String nextReplica = replicaEndPoint.getNextReplica();
-    if (nextReplica != null && nextReplica.equals(lastReplica.get())) {
-      nextReplica = replicaEndPoint.getNextReplica();
-    }
-    lastReplica.set(nextReplica);
-    return nextReplica;
   }
 
   private Duration getPollerInterval(Properties properties) {
