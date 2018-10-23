@@ -36,10 +36,19 @@ cache:
   - "~/.m2/repository"
 
 after_success:
-- "./bin/version.sh"
-- "./bin/tag.sh"
+ #
 
 deploy:
+- provider: script
+  script: "./bin/version.sh"
+  skip_cleanup: true
+  on:
+    branch: master
+- provider: script
+  script: "./bin/tag.sh"
+  skip_cleanup: true
+  on:
+    branch: master
 - provider: script
   script: "./cd/deploy.sh"
   skip_cleanup: true
