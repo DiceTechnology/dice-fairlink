@@ -15,8 +15,8 @@ script:
 - mvn clean install -q || travis_terminate 1
 before_install:
 - openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
-  -in github.pem.enc -out github.pem -d
-- git config core.sshCommand "ssh -i guthub.pem -F /dev/null"
+  -in github.pem.enc -out ~/github.pem -d
+- git config core.sshCommand "ssh -i ~/guthub.pem -F /dev/null"
 #- gpg --import travis.gpg.pem
 
 env:
