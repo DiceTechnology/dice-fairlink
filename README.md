@@ -118,12 +118,11 @@ Add the following repository to your `~/.m2/settings.xml` file or to your `pom.x
 Add the following dependency to your `pom.xml`
 ```xml
 <dependency>
-	<groupId>technology.dice.open</groupId>
-	<artifactId>dice-fairlink</artifactId>
-	<version>1.0.6</version>
+   <groupId>technology.dice.open</groupId>
+   <artifactId>dice-fairlink</artifactId>
+   <version>1.0.6</version>
 </dependency>
 ```
-
 
 # Driver properties
 dice-fairlink uses the AWS RDS Java SDK to obtain information about the cluster, and needs a valid authentication
