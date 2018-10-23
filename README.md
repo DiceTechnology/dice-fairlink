@@ -115,8 +115,8 @@ Add the following repository to your `~/.m2/settings.xml` file or to your `pom.x
 </repository>
 ```
 
-```xml
 Add the following dependency to your `pom.xml`
+```xml
 <dependency>
 	<groupId>technology.dice.open</groupId>
 	<artifactId>dice-fairlink</artifactId>
