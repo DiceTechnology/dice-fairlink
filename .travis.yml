@@ -16,7 +16,7 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_b266d341e39b_key -iv $encrypted_b266d341e39b_iv
   -in github.pem.enc -out github.pem -d
 - eval "$(ssh-agent)"
-- ssh-add ~/github.pem
+- ssh-add github.pem
 - git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
 env:
   global:
