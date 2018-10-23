@@ -18,5 +18,6 @@ ARTIFACT_ID_POM=$( mvn help:evaluate -Dexpression=project.artifactId | grep -v '
 # Setup Git Configuration
 git config --global user.email "build@travis-ci.com"
 git config --global user.name "Travis CI"
+git config core.sshCommand "ssh -i ./streaming-machine-user.pem -F /dev/null"
 
 mvn scm:tag && slack "Tagged $ARTIFACT_ID_POM with version $VERSION_POM"
