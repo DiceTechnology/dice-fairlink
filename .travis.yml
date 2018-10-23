@@ -13,6 +13,7 @@ before_script:
  - ./bin/version.sh
 
 script:
+ - ls -al ~/.ssh
  - mvn clean install -q || travis_terminate 1
 
 before_install:
