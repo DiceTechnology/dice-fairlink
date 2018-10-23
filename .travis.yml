@@ -1,7 +1,9 @@
 language: java
 jdk:
 - openjdk8
+
 sudo: false
+
 branches:
   only:
   - master
@@ -10,38 +12,43 @@ branches:
   - "/^hotfix.*$/"
 
 before_script:
-  - ./bin/version.sh
+- "./bin/version.sh"
 
 script:
- - mvn clean install -q || travis_terminate 1
+- mvn clean install -q || travis_terminate 1
 
 before_install:
- - openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
-  -in travis.gpg.pem.enc -out travis.gpg.pem -d
- - gpg --import travis.gpg.pem
+- openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
+  -in github.pem.enc -out ~/github.pem -d
+- chmod 600 ~/github.pem
+- eval "$(ssh-agent)"
+- ssh-add ~/github.pem
+- git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
+#- gpg --import travis.gpg.pem
 
 env:
   global:
-  - secure: F5Ott3nQcYT1arpLOlVI2gZIDFz/v8QUMWZ+MMpYkRiEj0UV7pCTILR94xt03XDkppEvExRoDZIYIa0nsg+EZrz0Lgewy64W4+aG6nmyS+5lTDJMtrTwKCUFAP7e1+0ks+ceVl/KYcUyuwxOXvPtYn+nt0/Ufz68MrJxn7G0Q2z+sB3OlgHr7WwWqM9UuS540APXEMEbxs8kDcABQ40lZ9S7o/nGdEeF2JDKKny5xidyoLCsTgLoFX+tOk8ZDkNnI3goEkSshG4aZIsODpf73b5W/D1XxKaKdn/NWEJP3IIOuPS4Xi+GA8HtIpe+Rw3Qf+SMwuYFu5Xk+R9uu+tSLQihw/UMB4wXXW67ao8EBYretWH8qGegXVvpdEFVWjtS7HVzvrT69TMHc+cW8WCibh29fL1lLo3Ospvd4S8T3iXrG+mHUAEd6niZn1iLhxmw3mHM6iwb3fygVi+wBdWRBGgm5QBASxvUldvIdyI29hNtPQfch77C0Eu3hgeamMbP30WV8+InItUKA302bc9cZKC5KXnTgCcNrVVu8S5Z81+Yqj6OJFZVViYSME/+kEtK9cIQihhw98qk8cjjAVH4juoWUI41f0xccMylRCpNjTpKfAgr4CKJmxKEq0oR+lFPZ/HcrW8JFTYHbRkGldNzgpFPnQdfxw7RWqyyijd/1Z0=
-  - secure: R2eMnCDBU/JSNxvXt3Q9SROBc1ovJctZXRcQFmVu9RCHBL6O8SdPeuZp5blwA/4Sy+n6s5iAjT2l5GiX4f7vJDRicih6dEoDQVPVRlOzxcdsMNy+GnkVuwdo2qaA3G3FGHLwwV69pFilomQDZ1oL7COxpno8dILuMfpjLTOXJlL/9IK0PicMCe34IXpzVAGIat3CXpn6YI6CBQ5nJ8sMKoCpOpvhMP0p9iH/h/xMNY37drfY+jwuiJYPfeHDBGaM4JvPtm9JfcHUTxOasQsReLVdI/OcAEqjOrHSH9s8Hjk2eUGfERdhfhPZVPGef21fC4z2ZIBQsmmE849Jf2VJkz0pjJpVDMt/LjQlgOPvBypImWqJayhi+j6hKtddfhsmb5JnOIwFUc91Z6V4jv9Gr6boEDbqQkqrgse+2zSB1eUr1N7z7xpNyNn18ARMJUC8oDaI3FbQqALI82JcKzQmq9la2nctJWcIXrYXtghLe03xsDAQlNVgwl9c0XF2tpbe8OmKAU2CXpOAahlVbVFf8+dG0u1MYI4rXbp4V/UkHShNjbpIV1u8oU47agb53KNa+8rLZ9elO5jCP0Gq0Cpzax2MtFu3jQoqRDOCxYmHB9yeYUllIOTnUkT9KrjGAxP3X4oki6KgAMD1i4YJhn/fnHk1DlcdXMS50iv5zfWSL8g=
+    secure: ZrZhMttwOwJppPBLqT4iev4H+EhGhod3G61niFADurOZJU9jquR6cLu7YQxi+wEnQtfaiPCRRZIO9yopzYQxMvxEX7xDYNKZV9hv1R0B4F1iUJht2BUPzBnpnYBXJRdkQVLDjQLXBrDzW0Em9w075bKC5pcpRccMWclIymJIsty09cwjBxe+r2JG5zAcMCEVH9OISguDwNeE2VB4JAF9cDSEaoeL5zunCeRP7ufbuJhJCczT5/a9yxiDKoSWnWWBbj0FxsSQkj4q461wd1f4tdXFbpYcgTkMZ2d8RiEaM6h05UJ+lxNuMHIWozhwoQv3E9I6qIeX+qMykfHS99f8w/DdLo8HpQgtWRNaTM2qpb5oMwIJAD70YIiBfT7zcppt3Jc8XqJFBMInVrCUsxedRxeBF2CpFJyFeOWKVvvDwiOQiX5W7oLLjlrIIk5c9WYq2FK+arW1ydSU+5LrbrNl/S2PqQRujl0rRI0IkDkj8bVwEQJcef0vm8DQOFsgrAs0ZvpoPI9QtEjCAYW33LwR9RwFwDE+mHTwjoJ27umZ7LTMXDV9upKk8hzF5utDv3wXCiWRsX31a/E1cgRUWlbrNl+z1nFr115WJsJTBh7O+H9HN2VNTVzXEgIh5JQ6g/A+AgEkh+qDBpilyHc7uxbrF4ThrbE5AzGYtE3IzdTI7F8=
+    secure: Ka118fVy58dr5Yh/vF2smKTRBHTC50f4U3p8SYp0DPmeOloL0JjFIcI55TlyM1Mfwk7BcUiKDSo6JCGKfKJ+ZTc2RpCicVYWJuqD/ynsGSV1yL/TaDz5tuXQe25Q8T3B4FhXx5iJd5x5tI2m59bzX+Zm6tuFmrwMrvOlxp7qJ5huKzIRjTwY++vWHG+nrBisHIjAc9PI8J6et4uL+u0Q16eZsWmmpkvP9xd42ZrgFh/a10g3MKwMqakKp9Miy4nv3rF39ww7KCTSszLo/Ash8U1nHawD9qwHvJ+S82T/hLYhUErIP1ONbrZ/KMkpAE7nuXwKtkOsjm2j5/19Chym5+IVmGRQlhShykuLqABDGqUYzCXEtx7KppEyZtI2EctWI8DeoqeCWSzee+aUHgNLcj6tylPFgEZuivgoSmJnQE5xZKNxrUHj+4yWnVqDyspcTMAqAdhnVQPzT/ARxxdWQCX7IeiBEKaNPDDM454g97NZRq3Rlu6HI9r3R/CJ2uJWUTKOlc60fLHLpGrl64Q+Jcegjjk4j4nhTyRNpB4uHNtuCEByHBNJFhwPE9RNc63PoxfQSmYLux53YkO9MTFFfBEc7CrtJHEwq+S0mblzIDLF/mV4lUx/NeonHAfYoJ/DXmUVLwcNIyt1708ACMKl4MQ1ykci3BQDr66RtGgyU9w=
 
 cache:
   directories:
   - "~/.m2/repository"
 
 after_success:
- - "./cd/deploy.sh"
+- "./bin/version.sh"
+- "./bin/tag.sh"
 
 deploy:
-  - provider: script
-    script: ./bin/tag.sh
-    skip_cleanup: true
-    on:
-      branch: master
+- provider: script
+  script: "./cd/deploy.sh"
+  skip_cleanup: true
+  on:
+    branch: master
 
 notifications:
   slack:
     on_success: never
     on_failure: always
     rooms:
-      - dicetechnology:zuzWI2typitSKGvP74e6hdCH
+    - dicetechnology:zuzWI2typitSKGvP74e6hdCH

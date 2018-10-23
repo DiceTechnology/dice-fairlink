@@ -221,7 +221,10 @@
             </pluginRepositories>
             <build>
                 <plugins>
-                    <plugin>
+                    <!-- Commented out due to limitation of only one encrypted file in Travis.
+                    TODO: move to tar archive of all required files, which will be encrypted as a
+                    single file and then it's contents shall be extrated after decryption (in .travis.yml)   -->
+                    <!--                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>1.6</version>
@@ -234,7 +237,7 @@
                                 </goals>
                             </execution>
                         </executions>
-                    </plugin>
+                    </plugin>-->
                 </plugins>
             </build>
         </profile>
