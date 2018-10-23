@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/DiceTechnology/dice-fairlink.svg?token=F6ktiNWbNbvGRbN5NmqA&branch=master)](https://travis-ci.com/DiceTechnology/dice-fairlink)[![Download](https://api.bintray.com/packages/dicetechnology/dice-fairlink/dice-fairlink/images/download.svg?version=1.0.3)](https://bintray.com/dicetechnology/dice-fairlink/dice-fairlink/1.0.3/link)
+[![Build Status](https://travis-ci.com/DiceTechnology/dice-fairlink.svg?token=F6ktiNWbNbvGRbN5NmqA&branch=master)](https://travis-ci.com/DiceTechnology/dice-fairlink)[ ![Download](https://api.bintray.com/packages/dicetechnology/dice-fairlink/dice-fairlink/images/download.svg?version=1.0.3) ](https://bintray.com/dicetechnology/dice-fairlink/dice-fairlink/1.0.3/link)
 
 dice-fairlink is a JDBC driver designed to connect to the read replicas of an AWS Aurora cluster.
 The driver will periodically obtain a description of the cluster and dispatch connections to each read replica
