@@ -28,7 +28,7 @@ after_success:
   -in github.pem.enc -out ~/github.pem -d
 - chmod 600 ~/github.pem
 - ssh-add ~/github.pem
-#- git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
+- git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
 - "./bin/tag.sh"
 deploy:
 - provider: script
