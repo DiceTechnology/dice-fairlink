@@ -20,7 +20,7 @@
         <connection>scm:git:git@github.com:DiceTechnology/dice-fairlink.git</connection>
         <developerConnection>scm:git:git@github.com:DiceTechnology/dice-fairlink.git</developerConnection>
         <url>http://github.com/DiceTechnology/dice-fairlink/tree/master</url>
-    </scm>
+    </scm> 
 
     <licenses>
         <license>
