@@ -16,7 +16,9 @@ script:
 before_install:
 - openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
   -in github.pem.enc -out github.pem -d
+- git config core.sshCommand "ssh -i guthub.pem -F /dev/null"
 #- gpg --import travis.gpg.pem
+
 env:
   global:
     secure: ZrZhMttwOwJppPBLqT4iev4H+EhGhod3G61niFADurOZJU9jquR6cLu7YQxi+wEnQtfaiPCRRZIO9yopzYQxMvxEX7xDYNKZV9hv1R0B4F1iUJht2BUPzBnpnYBXJRdkQVLDjQLXBrDzW0Em9w075bKC5pcpRccMWclIymJIsty09cwjBxe+r2JG5zAcMCEVH9OISguDwNeE2VB4JAF9cDSEaoeL5zunCeRP7ufbuJhJCczT5/a9yxiDKoSWnWWBbj0FxsSQkj4q461wd1f4tdXFbpYcgTkMZ2d8RiEaM6h05UJ+lxNuMHIWozhwoQv3E9I6qIeX+qMykfHS99f8w/DdLo8HpQgtWRNaTM2qpb5oMwIJAD70YIiBfT7zcppt3Jc8XqJFBMInVrCUsxedRxeBF2CpFJyFeOWKVvvDwiOQiX5W7oLLjlrIIk5c9WYq2FK+arW1ydSU+5LrbrNl/S2PqQRujl0rRI0IkDkj8bVwEQJcef0vm8DQOFsgrAs0ZvpoPI9QtEjCAYW33LwR9RwFwDE+mHTwjoJ27umZ7LTMXDV9upKk8hzF5utDv3wXCiWRsX31a/E1cgRUWlbrNl+z1nFr115WJsJTBh7O+H9HN2VNTVzXEgIh5JQ6g/A+AgEkh+qDBpilyHc7uxbrF4ThrbE5AzGYtE3IzdTI7F8=
