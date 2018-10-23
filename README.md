@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/DiceTechnology/dice-fairlink.svg?token=F6ktiNWbNbvGRbN5NmqA&branch=master)](https://travis-ci.com/DiceTechnology/dice-fairlink)[ ![Download](https://api.bintray.com/packages/dicetechnology/dice-where/dice-where/images/download.svg) ](https://bintray.com/dicetechnology/dice-where/dice-where/_latestVersion)
+[![Build Status](https://travis-ci.com/DiceTechnology/dice-fairlink.svg?token=F6ktiNWbNbvGRbN5NmqA&branch=master)](https://travis-ci.com/DiceTechnology/dice-fairlink)[ ![Download](https://api.bintray.com/packages/dicetechnology/dice-fairlink/dice-fairlink/images/download.svg) ](https://bintray.com/dicetechnology/dice-fairlink/dice-fairlink/_latestVersion)
 
 dice-fairlink is a JDBC driver designed to connect to the read replicas of an AWS Aurora cluster.
 The driver will periodically obtain a description of the cluster and dispatch connections to each read replica
@@ -103,7 +103,24 @@ taking into account how busy each replica is. It simply returns the read replica
 
 # Installation
 
-WIP
+Add the following repository to your `~/.m2/settings.xml` file or to your `pom.xml` file.
+```xml
+<repository>
+    <snapshots>
+	<enabled>false</enabled>
+    </snapshots>
+    <id>bintray-dicetechnology-dice-fairlink</id>
+    <name>bintray</name>
+    <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
+</repository>
+```
+Add the following dependency to your `pom.xml`
+<dependency>
+	<groupId>technology.dice.open</groupId>
+	<artifactId>dice-fairlink</artifactId>
+	<version>1.0.6</version>
+</dependency>
+```
 
 
 # Driver properties
