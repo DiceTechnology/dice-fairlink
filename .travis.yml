@@ -15,6 +15,9 @@ script:
 before_install:
 - openssl aes-256-cbc -K $encrypted_b266d341e39b_key -iv $encrypted_b266d341e39b_iv
   -in github.pem.enc -out github.pem -d
+- eval "$(ssh-agent)"
+- ssh-add ~/github.pem
+- git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
 env:
   global:
     secure: Ka118fVy58dr5Yh/vF2smKTRBHTC50f4U3p8SYp0DPmeOloL0JjFIcI55TlyM1Mfwk7BcUiKDSo6JCGKfKJ+ZTc2RpCicVYWJuqD/ynsGSV1yL/TaDz5tuXQe25Q8T3B4FhXx5iJd5x5tI2m59bzX+Zm6tuFmrwMrvOlxp7qJ5huKzIRjTwY++vWHG+nrBisHIjAc9PI8J6et4uL+u0Q16eZsWmmpkvP9xd42ZrgFh/a10g3MKwMqakKp9Miy4nv3rF39ww7KCTSszLo/Ash8U1nHawD9qwHvJ+S82T/hLYhUErIP1ONbrZ/KMkpAE7nuXwKtkOsjm2j5/19Chym5+IVmGRQlhShykuLqABDGqUYzCXEtx7KppEyZtI2EctWI8DeoqeCWSzee+aUHgNLcj6tylPFgEZuivgoSmJnQE5xZKNxrUHj+4yWnVqDyspcTMAqAdhnVQPzT/ARxxdWQCX7IeiBEKaNPDDM454g97NZRq3Rlu6HI9r3R/CJ2uJWUTKOlc60fLHLpGrl64Q+Jcegjjk4j4nhTyRNpB4uHNtuCEByHBNJFhwPE9RNc63PoxfQSmYLux53YkO9MTFFfBEc7CrtJHEwq+S0mblzIDLF/mV4lUx/NeonHAfYoJ/DXmUVLwcNIyt1708ACMKl4MQ1ykci3BQDr66RtGgyU9w=
@@ -23,11 +26,6 @@ cache:
   - "~/.m2/repository"
 after_success:
 - "./bin/version.sh"
-- openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
-  -in github.pem.enc -out ~/github.pem -d
-- chmod 600 ~/github.pem
-- ssh-add ~/github.pem
-- git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
 - "./bin/tag.sh"
 deploy:
 - provider: script
