@@ -113,7 +113,8 @@ Add the following repository to your `~/.m2/settings.xml` file or to your `pom.x
     <name>bintray</name>
     <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
 </repository>
-```
+
+```xml
 Add the following dependency to your `pom.xml`
 <dependency>
 	<groupId>technology.dice.open</groupId>
