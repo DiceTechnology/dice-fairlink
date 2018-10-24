@@ -27,29 +27,37 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class AuroraReadonlyEndpoint {
-  private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
+public class AuroraReadEndpoint {
+  private static final Logger LOGGER = Logger.getLogger(AuroraReadEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
+
+  private final Predicate<DBClusterMember> allowedMembersPredicate;
   private final Duration pollerInterval;
+  private final AtomicReference<String> lastReplica = new AtomicReference<>();
+  private final AuroraReplicasFinder finder;
+
   private RandomisedCyclicIterator<String> replicas;
   private String readOnlyEndpoint;
-  private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
-  public AuroraReadonlyEndpoint(
-      String clusterId,
-      AWSCredentialsProvider credentialsProvider,
-      Duration pollerInterval,
-      Region region,
-      ScheduledExecutorService executor) {
-    AuroraReplicasFinder finder = new AuroraReplicasFinder(clusterId, credentialsProvider, region);
+  public AuroraReadEndpoint(
+      final String clusterId,
+      final AWSCredentialsProvider credentialsProvider,
+      final Duration pollerInterval,
+      final Region region,
+      final ScheduledExecutorService executor,
+      final Predicate<DBClusterMember> allowedMembersPredicate) {
     this.pollerInterval = pollerInterval;
-    finder.init();
+    this.allowedMembersPredicate = allowedMembersPredicate;
+
+    this.finder = new AuroraReplicasFinder(clusterId, credentialsProvider, region);
+    this.finder.init();
     executor.scheduleAtFixedRate(
-        finder, pollerInterval.getSeconds(), pollerInterval.getSeconds(), TimeUnit.SECONDS);
+        this.finder, pollerInterval.getSeconds(), pollerInterval.getSeconds(), TimeUnit.SECONDS);
   }
 
   public String getNextReplica() {
@@ -70,12 +78,12 @@ public class AuroraReadonlyEndpoint {
     }
   }
 
-  public class AuroraReplicasFinder implements Runnable {
+  private class AuroraReplicasFinder implements Runnable {
     private final AmazonRDSAsync client;
     private final String clusterId;
 
-    public AuroraReplicasFinder(
-        String clusterId, AWSCredentialsProvider credentialsProvider, Region region) {
+    private AuroraReplicasFinder(
+        final String clusterId, final AWSCredentialsProvider credentialsProvider, final Region region) {
       this.clusterId = clusterId;
       LOGGER.log(Level.INFO, "Cluster ID: {0}", clusterId);
       LOGGER.log(Level.INFO, "AWS Region: {0}", region);
@@ -93,25 +101,25 @@ public class AuroraReadonlyEndpoint {
       return describeDBClustersResult.getDBClusters().stream().findFirst();
     }
 
-    private List<String> replicaMembersOf(DBCluster cluster) {
-      List<DBClusterMember> readReplicas =
+    private List<String> replicaMembersOf(final DBCluster cluster) {
+      final List<DBClusterMember> clusterMembers =
           cluster
               .getDBClusterMembers()
               .stream()
-              .filter(member -> !member.isClusterWriter())
+              .filter(allowedMembersPredicate)
               .collect(Collectors.toList());
-      List<String> urls = new ArrayList<>(readReplicas.size());
-      for (DBClusterMember readReplica : readReplicas) {
+      final List<String> urls = new ArrayList<>(clusterMembers.size());
+      for (final DBClusterMember member : clusterMembers) {
         // the only functionally relevant branch of this iteration's branch is the final "else"
         // (replica has an endpoint
         // and is ACTIvE_STATUS. . All the other cases are for logging/visibility purposes only
-        final String dbInstanceIdentifier = readReplica.getDBInstanceIdentifier();
+        final String dbInstanceIdentifier = member.getDBInstanceIdentifier();
         LOGGER.log(
             Level.FINE,
             String.format(
                 "Found read replica in cluster [%s]: [%s])", clusterId, dbInstanceIdentifier));
 
-        DescribeDBInstancesResult describeDBInstancesResult =
+        final DescribeDBInstancesResult describeDBInstancesResult =
             client.describeDBInstances(
                 new DescribeDBInstancesRequest().withDBInstanceIdentifier(dbInstanceIdentifier));
         if (describeDBInstancesResult.getDBInstances().size() != 1) {
@@ -123,15 +131,15 @@ public class AuroraReadonlyEndpoint {
                   dbInstanceIdentifier,
                   clusterId));
         } else {
-          DBInstance readerInstance = describeDBInstancesResult.getDBInstances().get(0);
-          Endpoint endpoint = readerInstance.getEndpoint();
-          if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.getDBInstanceStatus())) {
+          final DBInstance dbInstance = describeDBInstancesResult.getDBInstances().get(0);
+          final Endpoint endpoint = dbInstance.getEndpoint();
+          if (!ACTIVE_STATUS.equalsIgnoreCase(dbInstance.getDBInstanceStatus())) {
             LOGGER.warning(
                 String.format(
                     "Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
                     dbInstanceIdentifier,
                     clusterId,
-                    readerInstance.getDBInstanceStatus(),
+                    dbInstance.getDBInstanceStatus(),
                     ACTIVE_STATUS));
           } else if (endpoint == null) {
             LOGGER.log(
@@ -194,7 +202,7 @@ public class AuroraReadonlyEndpoint {
       }
     }
 
-    public void init() {
+    private void init() {
       Optional<DBCluster> dbClusterOptional = this.describeCluster();
       if (!dbClusterOptional.isPresent()) {
         throw new RuntimeException(

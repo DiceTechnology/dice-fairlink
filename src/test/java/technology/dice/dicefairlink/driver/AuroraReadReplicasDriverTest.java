@@ -7,6 +7,7 @@ package technology.dice.dicefairlink.driver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.Before;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -17,40 +18,37 @@ public class AuroraReadReplicasDriverTest {
   private static final String VALID_JDBC_URL =
       "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
 
+  private AuroraReadDriver auroraReadReplicasDriver;
+  @Before
+  public void setUp() {
+    auroraReadReplicasDriver =
+        new AuroraReadDriver(AuroraReadDriver.DRIVER_PROTOCOL_RO, AuroraReadDriver.ONLY_READ_REPLICAS, new ScheduledThreadPoolExecutor(1));
+  }
+
   @Test(expected = SQLException.class)
   public void throwsOnAcceptsURL_nullString() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     auroraReadReplicasDriver.acceptsURL(null);
   }
 
   @Test
   public void canAcceptsURL_emptyString() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     boolean retunedValue = auroraReadReplicasDriver.acceptsURL("");
     assertThat(retunedValue).isEqualTo(false);
   }
 
   @Test
   public void canAcceptsURL_validString() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     boolean retunedValue = auroraReadReplicasDriver.acceptsURL(VALID_JDBC_URL);
     assertThat(retunedValue).isEqualTo(true);
   }
 
   @Test(expected = NullPointerException.class)
   public void failToConnectToValidUrl_nullProperties() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, null); // last call must throw
   }
 
   @Test(expected = RuntimeException.class)
   public void failToConnectToValidUrl_emptyProperties_andNoRegionAvailable() throws Exception {
-    AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1));
     final Properties emptyProperties = new Properties();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, emptyProperties); // last call must throw
   }

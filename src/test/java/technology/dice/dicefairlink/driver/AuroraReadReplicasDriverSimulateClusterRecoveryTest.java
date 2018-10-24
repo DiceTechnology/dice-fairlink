@@ -52,7 +52,7 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     Regions.class,
     AmazonRDSAsyncClient.class,
     AmazonRDSAsyncClientBuilder.class,
-    AuroraReadReplicasDriver.class
+    AuroraReadDriver.class
   })
   public void canConnectToValidUrlBasicAuth_whenOnlyMasterIsAvailableThenListOfReplicasChanges() throws Exception {
     final String stubInstanceId_A = "123";
@@ -82,7 +82,9 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     final Driver mockMySqlDriver = mock(Driver.class);
 
     PowerMock.mockStatic(DriverManager.class);
-    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadReplicasDriver.class));
+    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadDriver.class));
+    PowerMock.expectLastCall();
+    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadDriver.class));
     PowerMock.expectLastCall();
     EasyMock.expect(DriverManager.getDriver(VALID_JDBC_CLUSTER_RO_ENDPOINT_URL)).andReturn(mockMySqlDriver); // once driver is decided for the delegated URL type (be it MySQL, PostgreSQL etc) it will not change.
     PowerMock.replay(DriverManager.class);
@@ -130,8 +132,8 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
         .thenReturn(VALID_JDBC_CLUSTER_RO_ENDPOINT_URL);
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
-    AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(stepByStepExecutor);
+    AuroraReadDriver auroraReadReplicasDriver =
+        new AuroraReadDriver(AuroraReadDriver.DRIVER_PROTOCOL_RO, AuroraReadDriver.ONLY_READ_REPLICAS, stepByStepExecutor);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
