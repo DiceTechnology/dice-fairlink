@@ -241,7 +241,7 @@ public class AuroraReadDriver implements Driver {
     }
     String delegate = matcher.group("delegate");
     LOGGER.log(Level.FINE, "Delegate driver: {0}", delegate);
-    final String clusterURI = protocolName + ":" + matcher.group("uri");
+    final String clusterURI = delegate + ":" + matcher.group("uri");
     try {
       URI uri = new URI(clusterURI);
       LOGGER.log(Level.FINE, "Driver URI: {0}", uri);
