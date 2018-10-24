@@ -157,3 +157,7 @@ additionally, the following dependency must be added to the project:
 ```
 This will direct the `java.util.logging` logging statements to SLF4J, and make them available to any
 logging backend as `logback` or `log4j`.
+
+
+**NOTE:**
+For optimal (even) connection destribution the number of connections must be equal to the product of number of read replicas times N, where N is positive integer.
