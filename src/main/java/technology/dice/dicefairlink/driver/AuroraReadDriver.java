@@ -58,6 +58,7 @@ public class AuroraReadDriver implements Driver {
   private final Map<String, Driver> delegates = new HashMap<>();
   private final Map<URI, AuroraReadEndpoint> auroraClusters = new HashMap<>();
 
+  private final String protocolName;
   private final Pattern driverPattern;
   private final Predicate<DBClusterMember> allowedMembersPredicate;
   private final ScheduledExecutorService executor;
@@ -74,7 +75,8 @@ public class AuroraReadDriver implements Driver {
 
   public AuroraReadDriver(final String protocolName, final Predicate<DBClusterMember> allowedMembersPredicate, final ScheduledExecutorService executor) {
     LOGGER.fine("Starting...");
-    this.driverPattern = Pattern.compile("jdbc:" + protocolName + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
+    this.protocolName = protocolName;
+    this.driverPattern = Pattern.compile("jdbc:" + this.protocolName + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
     this.allowedMembersPredicate = allowedMembersPredicate;
     this.executor = executor;
   }
@@ -239,7 +241,7 @@ public class AuroraReadDriver implements Driver {
     }
     String delegate = matcher.group("delegate");
     LOGGER.log(Level.FINE, "Delegate driver: {0}", delegate);
-    final String clusterURI = DRIVER_PROTOCOL_RO + ":" + matcher.group("uri");
+    final String clusterURI = protocolName + ":" + matcher.group("uri");
     try {
       URI uri = new URI(clusterURI);
       LOGGER.log(Level.FINE, "Driver URI: {0}", uri);
