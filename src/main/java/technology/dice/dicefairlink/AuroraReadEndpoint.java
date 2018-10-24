@@ -22,12 +22,13 @@ import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -36,13 +37,16 @@ public class AuroraReadEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
 
-  private final Predicate<DBClusterMember> allowedMembersPredicate;
   private final Duration pollerInterval;
   private final AtomicReference<String> lastReplica = new AtomicReference<>();
   private final AuroraReplicasFinder finder;
+  private final int readReplicaRatio;
 
+  private final AtomicReference<String> master = new AtomicReference<>();
   private RandomisedCyclicIterator<String> replicas;
   private String readOnlyEndpoint;
+
+  private final AtomicInteger readReplicasUsed = new AtomicInteger(0);
 
   public AuroraReadEndpoint(
       final String clusterId,
@@ -50,9 +54,9 @@ public class AuroraReadEndpoint {
       final Duration pollerInterval,
       final Region region,
       final ScheduledExecutorService executor,
-      final Predicate<DBClusterMember> allowedMembersPredicate) {
+      final int readReplicaRatio) {
     this.pollerInterval = pollerInterval;
-    this.allowedMembersPredicate = allowedMembersPredicate;
+    this.readReplicaRatio = readReplicaRatio;
 
     this.finder = new AuroraReplicasFinder(clusterId, credentialsProvider, region);
     this.finder.init();
@@ -62,11 +66,18 @@ public class AuroraReadEndpoint {
 
   public String getNextReplica() {
     try {
-      String nextReplica = replicas.next();
+      String nextReplica;
+      if(readReplicaRatio > 0 && readReplicasUsed.incrementAndGet() > readReplicaRatio * replicas.size()) {
+        nextReplica = master.get();
+        readReplicasUsed.set(0);
+      } else {
+        nextReplica = replicas.next();
+      }
       if (nextReplica != null && nextReplica.equals(lastReplica.get())) {
         nextReplica = replicas.next();
       }
       lastReplica.set(nextReplica);
+      LOGGER.log(Level.FINE, "getNextReplica returns: {0}", nextReplica);
       return nextReplica;
     } catch (NoSuchElementException e) {
       LOGGER.log(
@@ -102,14 +113,21 @@ public class AuroraReadEndpoint {
     }
 
     private List<String> replicaMembersOf(final DBCluster cluster) {
-      final List<DBClusterMember> clusterMembers =
+      final Map<Boolean, List<DBClusterMember>> clusterMembers =
           cluster
               .getDBClusterMembers()
               .stream()
-              .filter(allowedMembersPredicate)
-              .collect(Collectors.toList());
-      final List<String> urls = new ArrayList<>(clusterMembers.size());
-      for (final DBClusterMember member : clusterMembers) {
+              .collect(Collectors.partitioningBy(DBClusterMember::isClusterWriter));
+
+      if(readReplicaRatio > 0) {
+        final String masterId = clusterMembers.get(Boolean.TRUE).get(0).getDBInstanceIdentifier();
+        final DescribeDBInstancesResult masterDescribed = client.describeDBInstances(
+                  new DescribeDBInstancesRequest().withDBInstanceIdentifier(masterId));
+        master.set(masterDescribed.getDBInstances().get(0).getEndpoint().getAddress());
+      }
+
+      final List<String> urls = new ArrayList<>(clusterMembers.get(Boolean.FALSE).size());
+      for (final DBClusterMember member : clusterMembers.get(Boolean.FALSE)) {
         // the only functionally relevant branch of this iteration's branch is the final "else"
         // (replica has an endpoint
         // and is ACTIvE_STATUS. . All the other cases are for logging/visibility purposes only

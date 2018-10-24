@@ -22,7 +22,7 @@ public class AuroraReadReplicasDriverTest {
   @Before
   public void setUp() {
     auroraReadReplicasDriver =
-        new AuroraReadDriver(AuroraReadDriver.DRIVER_PROTOCOL_RO, AuroraReadDriver.ONLY_READ_REPLICAS, new ScheduledThreadPoolExecutor(1));
+        new AuroraReadDriver(new ScheduledThreadPoolExecutor(1));
   }
 
   @Test(expected = SQLException.class)

@@ -81,8 +81,6 @@ public class AuroraReadReplicasDriverConnectTest {
     PowerMock.mockStatic(DriverManager.class);
     DriverManager.registerDriver(EasyMock.anyObject(AuroraReadDriver.class));
     PowerMock.expectLastCall();
-    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadDriver.class));
-    PowerMock.expectLastCall();
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL)).andReturn(mockDriver);
     PowerMock.replay(DriverManager.class);
 
@@ -110,7 +108,7 @@ public class AuroraReadReplicasDriverConnectTest {
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     AuroraReadDriver auroraReadReplicasDriver =
-        new AuroraReadDriver(AuroraReadDriver.DRIVER_PROTOCOL_RO, AuroraReadDriver.ONLY_READ_REPLICAS, stepByStepExecutor);
+        new AuroraReadDriver(stepByStepExecutor);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
 

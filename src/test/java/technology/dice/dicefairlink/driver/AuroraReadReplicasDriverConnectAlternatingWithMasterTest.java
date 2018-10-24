@@ -6,7 +6,6 @@
 package technology.dice.dicefairlink.driver;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -42,16 +41,16 @@ import technology.dice.dicefairlink.driver.AuroraReadReplicasDriverConnectTest.S
 public class AuroraReadReplicasDriverConnectAlternatingWithMasterTest {
 
   private static final String VALID_JDBC_URL =
-      "jdbc:aurora:mysql://aa:123/db?param1=123&param2=true&param3=abc";
+      "jdbc:auroraro(2):mysql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_LOW_JDBC_URL_A =
-      "jdbc:mysql://replica-1-ro:123/db?param1=123&param2=true&param3=abc";
-  private static final String VALID_LOW_JDBC_URL_B =
-      "jdbc:mysql://replica-2-ro:123/db?param1=123&param2=true&param3=abc";
-  private static final String VALID_LOW_JDBC_URL_C =
       "jdbc:mysql://master:123/db?param1=123&param2=true&param3=abc";
-  private static final String VALID_ENDPOINT_ADDRESS_A = "replica-1-ro";
-  private static final String VALID_ENDPOINT_ADDRESS_B = "replica-2-ro";
-  private static final String VALID_ENDPOINT_ADDRESS_C = "master";
+  private static final String VALID_LOW_JDBC_URL_B =
+      "jdbc:mysql://replica-1-ro:123/db?param1=123&param2=true&param3=abc";
+  private static final String VALID_LOW_JDBC_URL_C =
+      "jdbc:mysql://replica-2-ro:123/db?param1=123&param2=true&param3=abc";
+  private static final String VALID_ENDPOINT_ADDRESS_A = "master";
+  private static final String VALID_ENDPOINT_ADDRESS_B = "replica-1-ro";
+  private static final String VALID_ENDPOINT_ADDRESS_C = "replica-2-ro";
 
   @Test
   @PrepareForTest({
@@ -96,8 +95,6 @@ public class AuroraReadReplicasDriverConnectAlternatingWithMasterTest {
     PowerMock.mockStatic(DriverManager.class);
     DriverManager.registerDriver(EasyMock.anyObject(AuroraReadDriver.class));
     PowerMock.expectLastCall();
-    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadDriver.class));
-    PowerMock.expectLastCall();
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL_A)).andReturn(mockDriver);
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL_B)).andReturn(mockDriver);
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL_C)).andReturn(mockDriver);
@@ -118,20 +115,18 @@ public class AuroraReadReplicasDriverConnectAlternatingWithMasterTest {
         .thenReturn(Arrays.asList(mockDbCluster));
 
     Mockito.when(mockDbCluster.getDBClusterMembers())
-        .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_B))
-        .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_C))
-        .thenReturn(Arrays.asList(mockDbClusterMember_B, mockDbClusterMember_C));
+        .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_B, mockDbClusterMember_C));
 
+    Mockito.when(mockDbClusterMember_A.isClusterWriter()).thenReturn(true);
     Mockito.when(mockDbClusterMember_A.getDBInstanceIdentifier()).thenReturn(stubInstanceId_A);
+    Mockito.when(mockDbClusterMember_B.isClusterWriter()).thenReturn(false);
     Mockito.when(mockDbClusterMember_B.getDBInstanceIdentifier()).thenReturn(stubInstanceId_B);
+    Mockito.when(mockDbClusterMember_C.isClusterWriter()).thenReturn(false);
     Mockito.when(mockDbClusterMember_C.getDBInstanceIdentifier()).thenReturn(stubInstanceId_C);
 
     Mockito.when(
         mockAmazonRDSAsync.describeDBInstances(Mockito.any(DescribeDBInstancesRequest.class)))
         .thenReturn(mockDbInstancesResult_A)
-        .thenReturn(mockDbInstancesResult_B)
-        .thenReturn(mockDbInstancesResult_A)
-        .thenReturn(mockDbInstancesResult_C)
         .thenReturn(mockDbInstancesResult_B)
         .thenReturn(mockDbInstancesResult_C);
     Mockito.when(mockDbInstancesResult_A.getDBInstances())
@@ -152,27 +147,33 @@ public class AuroraReadReplicasDriverConnectAlternatingWithMasterTest {
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     AuroraReadDriver auroraReadReplicasDriver =
-        new AuroraReadDriver(AuroraReadDriver.DRIVER_PROTOCOL_ALL, AuroraReadDriver.ALL_INSTANCES, stepByStepExecutor);
+        new AuroraReadDriver(stepByStepExecutor);
+
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
-    stepByStepExecutor.step();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
-    stepByStepExecutor.step();
+    auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
+    auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
 
-    verify(mockDbClusterMember_A, never()).isClusterWriter();
-    verify(mockDbClusterMember_A, times(2)).getDBInstanceIdentifier();
-    verify(mockDbInstance_A, times(2)).getEndpoint();
-    verify(mockEndpoint_A, times(2)).getAddress();
+    verify(mockDbClusterMember_A, times(1)).isClusterWriter();
+    verify(mockDbClusterMember_A, times(1)).getDBInstanceIdentifier();
+    verify(mockDbInstance_A, times(1)).getEndpoint();
+    verify(mockEndpoint_A, times(1)).getAddress();
 
-    verify(mockDbClusterMember_B, never()).isClusterWriter();
-    verify(mockDbClusterMember_B, times(2)).getDBInstanceIdentifier();
-    verify(mockDbInstance_B, times(2)).getEndpoint();
-    verify(mockEndpoint_B, times(2)).getAddress();
+    verify(mockDbClusterMember_B, times(1)).isClusterWriter();
+    verify(mockDbClusterMember_B, times(1)).getDBInstanceIdentifier();
+    verify(mockDbInstance_B, times(1)).getEndpoint();
+    verify(mockEndpoint_B, times(1)).getAddress();
 
-    verify(mockDbClusterMember_C, never()).isClusterWriter();
-    verify(mockDbClusterMember_C, times(2)).getDBInstanceIdentifier();
-    verify(mockDbInstance_C, times(2)).getEndpoint();
-    verify(mockEndpoint_C, times(2)).getAddress();
+    verify(mockDbClusterMember_C, times(1)).isClusterWriter();
+    verify(mockDbClusterMember_C, times(1)).getDBInstanceIdentifier();
+    verify(mockDbInstance_C, times(1)).getEndpoint();
+    verify(mockEndpoint_C, times(1)).getAddress();
+
+    // Because of 2 in "jdbc:auroraro(2)..." the pool will call 2 times EACH of the ReadReplicas before use master once.
+    verify(mockDriver, times(2)).connect(VALID_LOW_JDBC_URL_B, validProperties); // replica 1
+    verify(mockDriver, times(2)).connect(VALID_LOW_JDBC_URL_C, validProperties); // replica 2
+    verify(mockDriver, times(1)).connect(VALID_LOW_JDBC_URL_A, validProperties); // master
 
   }
 }

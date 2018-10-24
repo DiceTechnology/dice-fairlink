@@ -56,4 +56,8 @@ public class RandomisedCyclicIterator<T> implements Iterator<T> {
     T next = iterator.next();
     return next;
   }
+
+  public int size() {
+    return elements.size();
+  }
 }

@@ -12,7 +12,6 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
-import com.amazonaws.services.rds.model.DBClusterMember;
 import technology.dice.dicefairlink.AuroraReadEndpoint;
 import technology.dice.dicefairlink.DiscoveryAuthMode;
 import technology.dice.dicefairlink.ParsedUrl;
@@ -32,7 +31,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -46,11 +44,6 @@ public class AuroraReadDriver implements Driver {
   public static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
   public static final String CLUSTER_REGION = "auroraClusterRegion";
 
-  public static final String DRIVER_PROTOCOL_RO = "auroraro";
-  public static final String DRIVER_PROTOCOL_ALL = "aurora";
-  public static final Predicate<DBClusterMember> ONLY_READ_REPLICAS = (DBClusterMember member) -> !member.isClusterWriter();
-  public static final Predicate<DBClusterMember> ALL_INSTANCES = (DBClusterMember member) -> true;
-
   private static final Logger LOGGER = Logger.getLogger(AuroraReadDriver.class.getName());
 
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
@@ -60,24 +53,21 @@ public class AuroraReadDriver implements Driver {
 
   private final String protocolName;
   private final Pattern driverPattern;
-  private final Predicate<DBClusterMember> allowedMembersPredicate;
   private final ScheduledExecutorService executor;
 
   static {
     try {
-      DriverManager.registerDriver(new AuroraReadDriver(DRIVER_PROTOCOL_RO, ONLY_READ_REPLICAS, new ScheduledThreadPoolExecutor(1)));
-      DriverManager.registerDriver(new AuroraReadDriver(DRIVER_PROTOCOL_ALL, ALL_INSTANCES, new ScheduledThreadPoolExecutor(1)));
+      DriverManager.registerDriver(new AuroraReadDriver(new ScheduledThreadPoolExecutor(1)));
       LOGGER.fine("AuroraReadReplicasDriver is now registered.");
     } catch (Exception e) {
       throw new RuntimeException("Can't register driver!", e);
     }
   }
 
-  public AuroraReadDriver(final String protocolName, final Predicate<DBClusterMember> allowedMembersPredicate, final ScheduledExecutorService executor) {
+  public AuroraReadDriver(final ScheduledExecutorService executor) {
     LOGGER.fine("Starting...");
-    this.protocolName = protocolName;
-    this.driverPattern = Pattern.compile("jdbc:" + this.protocolName + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
-    this.allowedMembersPredicate = allowedMembersPredicate;
+    this.protocolName = "auroraro";
+    this.driverPattern = Pattern.compile("jdbc:" + protocolName + "(\\((?<ratio>\\d+)\\))?:(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
     this.executor = executor;
   }
 
@@ -103,6 +93,7 @@ public class AuroraReadDriver implements Driver {
               () -> new SQLException(String.format("Invalid url: [%s]", url)));
       // TODO if our info about replica is wrong (say, instance is down), then following 'connect'
       // will throw, and we must re-query Aurora Cluster and try again once.
+      LOGGER.log(Level.FINE, "CONNECTING TO: {0}", parsedUrl.getDelegateUrl());
       return delegates
           .get(parsedUrl.getDelegateProtocol())
           .connect(parsedUrl.getDelegateUrl(), properties);
@@ -253,9 +244,10 @@ public class AuroraReadDriver implements Driver {
         // are only processed once per uri, the driver does not support dynamically changing them
         final Duration pollerInterval = getPollerInterval(properties);
         final AWSCredentialsProvider credentialsProvider = awsAuth(properties);
+        final String ratio = matcher.group("ratio");
         final AuroraReadEndpoint roEndpoint =
             new AuroraReadEndpoint(
-                uri.getHost(), credentialsProvider, pollerInterval, region, executor, allowedMembersPredicate);
+                uri.getHost(), credentialsProvider, pollerInterval, region, executor, ratio == null ? 0 : Integer.parseInt(ratio));
 
         LOGGER.log(Level.FINE, "RO url: {0}", uri.getHost());
         this.auroraClusters.put(uri, roEndpoint);
