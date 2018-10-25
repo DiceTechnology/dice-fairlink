@@ -18,11 +18,11 @@ public class AuroraReadReplicasDriverTest {
   private static final String VALID_JDBC_URL =
       "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
 
-  private AuroraReadDriver auroraReadReplicasDriver;
+  private AuroraReadOnlyDriver auroraReadReplicasDriver;
   @Before
   public void setUp() {
     auroraReadReplicasDriver =
-        new AuroraReadDriver(new ScheduledThreadPoolExecutor(1));
+        new AuroraReadOnlyDriver(new ScheduledThreadPoolExecutor(1));
   }
 
   @Test(expected = SQLException.class)

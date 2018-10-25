@@ -12,7 +12,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
-import technology.dice.dicefairlink.AuroraReadEndpoint;
+import technology.dice.dicefairlink.AuroraReadOnlyEndpoint;
 import technology.dice.dicefairlink.DiscoveryAuthMode;
 import technology.dice.dicefairlink.ParsedUrl;
 
@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AuroraReadDriver implements Driver {
+public class AuroraReadOnlyDriver implements Driver {
 
   public static final String AWS_AUTH_MODE_PROPERTY_NAME = "auroraDiscoveryAuthMode";
   public static final String AWS_BASIC_CREDENTIALS_KEY = "auroraDiscoveryKeyId";
@@ -44,12 +44,12 @@ public class AuroraReadDriver implements Driver {
   public static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
   public static final String CLUSTER_REGION = "auroraClusterRegion";
 
-  private static final Logger LOGGER = Logger.getLogger(AuroraReadDriver.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(AuroraReadOnlyDriver.class.getName());
 
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private static final String JDBC_PREFIX = "jdbc";
   private final Map<String, Driver> delegates = new HashMap<>();
-  private final Map<URI, AuroraReadEndpoint> auroraClusters = new HashMap<>();
+  private final Map<URI, AuroraReadOnlyEndpoint> auroraClusters = new HashMap<>();
 
   private final String protocolName;
   private final Pattern driverPattern;
@@ -57,14 +57,14 @@ public class AuroraReadDriver implements Driver {
 
   static {
     try {
-      DriverManager.registerDriver(new AuroraReadDriver(new ScheduledThreadPoolExecutor(1)));
+      DriverManager.registerDriver(new AuroraReadOnlyDriver(new ScheduledThreadPoolExecutor(1)));
       LOGGER.fine("AuroraReadReplicasDriver is now registered.");
     } catch (Exception e) {
       throw new RuntimeException("Can't register driver!", e);
     }
   }
 
-  public AuroraReadDriver(final ScheduledExecutorService executor) {
+  public AuroraReadOnlyDriver(final ScheduledExecutorService executor) {
     LOGGER.fine("Starting...");
     this.protocolName = "auroraro";
     this.driverPattern = Pattern.compile("jdbc:" + protocolName + "(\\((?<ratio>\\d+)\\))?:(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
@@ -245,8 +245,8 @@ public class AuroraReadDriver implements Driver {
         final Duration pollerInterval = getPollerInterval(properties);
         final AWSCredentialsProvider credentialsProvider = awsAuth(properties);
         final String ratio = matcher.group("ratio");
-        final AuroraReadEndpoint roEndpoint =
-            new AuroraReadEndpoint(
+        final AuroraReadOnlyEndpoint roEndpoint =
+            new AuroraReadOnlyEndpoint(
                 uri.getHost(), credentialsProvider, pollerInterval, region, executor, ratio == null ? 0 : Integer.parseInt(ratio));
 
         LOGGER.log(Level.FINE, "RO url: {0}", uri.getHost());

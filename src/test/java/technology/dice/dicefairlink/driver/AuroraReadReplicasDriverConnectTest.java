@@ -53,7 +53,7 @@ public class AuroraReadReplicasDriverConnectTest {
     Regions.class,
     AmazonRDSAsyncClient.class,
     AmazonRDSAsyncClientBuilder.class,
-    AuroraReadDriver.class
+    AuroraReadOnlyDriver.class
   })
   public void canConnectToValidUrlBasicAuth() throws Exception {
     final String stubInstanceId = "123";
@@ -79,7 +79,7 @@ public class AuroraReadReplicasDriverConnectTest {
 
     PowerMockito.mockStatic(AmazonRDSAsyncClient.class);
     PowerMock.mockStatic(DriverManager.class);
-    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadDriver.class));
+    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadOnlyDriver.class));
     PowerMock.expectLastCall();
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL)).andReturn(mockDriver);
     PowerMock.replay(DriverManager.class);
@@ -107,8 +107,8 @@ public class AuroraReadReplicasDriverConnectTest {
     Mockito.when(mockEndpoint.getAddress()).thenReturn(VALID_ENDPOINT_ADDRESS);
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
-    AuroraReadDriver auroraReadReplicasDriver =
-        new AuroraReadDriver(stepByStepExecutor);
+    AuroraReadOnlyDriver auroraReadReplicasDriver =
+        new AuroraReadOnlyDriver(stepByStepExecutor);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
 

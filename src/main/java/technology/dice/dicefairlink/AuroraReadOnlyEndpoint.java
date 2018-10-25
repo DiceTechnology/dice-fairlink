@@ -33,8 +33,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class AuroraReadEndpoint {
-  private static final Logger LOGGER = Logger.getLogger(AuroraReadEndpoint.class.getName());
+public class AuroraReadOnlyEndpoint {
+  private static final Logger LOGGER = Logger.getLogger(AuroraReadOnlyEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
 
   private final Duration pollerInterval;
@@ -48,7 +48,7 @@ public class AuroraReadEndpoint {
 
   private final AtomicInteger readReplicasUsed = new AtomicInteger(0);
 
-  public AuroraReadEndpoint(
+  public AuroraReadOnlyEndpoint(
       final String clusterId,
       final AWSCredentialsProvider credentialsProvider,
       final Duration pollerInterval,
