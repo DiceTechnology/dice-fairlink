@@ -58,8 +58,7 @@ public class AuroraReadReplicasDriver implements Driver {
 
   static {
     try {
-      DriverManager.registerDriver(
-          new AuroraReadReplicasDriver());
+      DriverManager.registerDriver(new AuroraReadReplicasDriver());
       LOGGER.fine("AuroraReadReplicasDriver is now registered.");
     } catch (Exception e) {
       throw new RuntimeException("Can't register driver!", e);
@@ -85,9 +84,7 @@ public class AuroraReadReplicasDriver implements Driver {
     return matches;
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public Connection connect(final String url, final Properties properties) throws SQLException {
     try {
@@ -105,41 +102,31 @@ public class AuroraReadReplicasDriver implements Driver {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public int getMajorVersion() {
     return Constants.AURORA_RO_MAJOR_VERSION;
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public int getMinorVersion() {
     return Constants.AURORA_RO_MINOR_VERSION;
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public Logger getParentLogger() {
     return LOGGER.getParent();
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public DriverPropertyInfo[] getPropertyInfo(String url, Properties properties) {
     return new DriverPropertyInfo[0];
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public boolean jdbcCompliant() {
     return false;
@@ -165,14 +152,14 @@ public class AuroraReadReplicasDriver implements Driver {
     }
     throw new RuntimeException(
         "Region is null. Please either provide property ["
-        + CLUSTER_REGION
-        + "] or set the environment variable [AWS_DEFAULT_REGION]");
+            + CLUSTER_REGION
+            + "] or set the environment variable [AWS_DEFAULT_REGION]");
   }
 
   private AWSCredentialsProvider awsAuth(Properties properties) throws SQLException {
     DiscoveryAuthMode authMode =
         DiscoveryAuthMode.fromStringInsensitive(
-            properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "environment"))
+                properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "environment"))
             .orElse(DiscoveryAuthMode.ENVIRONMENT);
     LOGGER.log(Level.FINE, "authMode: {0}", authMode);
     switch (authMode) {
@@ -249,8 +236,7 @@ public class AuroraReadReplicasDriver implements Driver {
         final AWSCredentialsProvider credentialsProvider = awsAuth(properties);
         final AuroraReadonlyEndpoint roEndpoint =
             new AuroraReadonlyEndpoint(
-                uri.getHost(), credentialsProvider, pollerInterval, region,
-                executorSupplier.get());
+                uri.getHost(), credentialsProvider, pollerInterval, region, executorSupplier.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", uri.getHost());
         this.auroraClusters.put(uri, roEndpoint);
@@ -262,15 +248,18 @@ public class AuroraReadReplicasDriver implements Driver {
               "Obtained [%s] for the next replica to use for cluster [%s]",
               nextReplica, uri.getHost()));
       final String prefix = String.format("%s:%s", JDBC_PREFIX, delegate);
-      final String delegatedReplicaUri = (nextReplica.startsWith(prefix)) ? nextReplica : new URI(
-          prefix,
-          uri.getUserInfo(),
-          nextReplica,
-          uri.getPort(),
-          uri.getPath(),
-          uri.getQuery(),
-          uri.getFragment())
-          .toASCIIString();
+      final String delegatedReplicaUri =
+          (nextReplica.startsWith(prefix))
+              ? nextReplica
+              : new URI(
+                      prefix,
+                      uri.getUserInfo(),
+                      nextReplica,
+                      uri.getPort(),
+                      uri.getPath(),
+                      uri.getQuery(),
+                      uri.getFragment())
+                  .toASCIIString();
       LOGGER.log(Level.INFO, "URI to connect to: {0}", delegatedReplicaUri);
 
       addDriverForDelegate(delegate, delegatedReplicaUri);
