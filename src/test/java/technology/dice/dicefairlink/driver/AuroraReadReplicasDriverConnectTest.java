@@ -77,13 +77,12 @@ public class AuroraReadReplicasDriverConnectTest {
     final Endpoint mockEndpoint = mock(Endpoint.class);
     final Driver mockDriver = mock(Driver.class);
 
-    PowerMockito.mockStatic(AmazonRDSAsyncClient.class);
     PowerMock.mockStatic(DriverManager.class);
-    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadReplicasDriver.class));
-    PowerMock.expectLastCall();
+    PowerMockito.doNothing().doThrow(Exception.class).when(DriverManager.class);
     EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL)).andReturn(mockDriver);
     PowerMock.replay(DriverManager.class);
 
+    PowerMockito.mockStatic(AmazonRDSAsyncClient.class);
     PowerMockito.when(AmazonRDSAsyncClient.asyncBuilder())
         .thenReturn(mockAmazonRDSAsyncClientBuilder);
     Mockito.when(mockAmazonRDSAsyncClientBuilder.withRegion(Regions.EU_WEST_1.getName()))
@@ -108,7 +107,7 @@ public class AuroraReadReplicasDriverConnectTest {
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(stepByStepExecutor);
+        new AuroraReadReplicasDriver(() -> stepByStepExecutor);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
 
