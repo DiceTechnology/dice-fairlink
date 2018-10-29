@@ -19,7 +19,7 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 
 dice-fairlink implements a generic sub-protocol of any existing jdbc protocol (psql,mysql,etc). The host section
 of the URL should be the cluster identifier and not the hostname of any cluster or instance endpoint.
-The driver will accept urls in the form `jdbc:XXXX:auroraro` and delegate the actual handling of the connection
+The driver will accept urls in the form `jdbc:auroraro:XXXX` and delegate the actual handling of the connection
 to the driver of the protocol `XXXX` (which needs to be loadable by the JVM classloader).
 
 ## Example:
@@ -27,7 +27,7 @@ to the driver of the protocol `XXXX` (which needs to be loadable by the JVM clas
 In a cluster named `my-cluster` with three read replicas `my-cluster-r1`, `my-cluster-r2` and, `my-cluster-r3`, and
 the following connection string
 ```java
-String connectionString = "jdbc:mysql:auroraro//my-cluster/my-schema";
+String connectionString = "jdbc:auroraro:mysql//my-cluster/my-schema";
 ```
 dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
 and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
