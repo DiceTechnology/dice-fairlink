@@ -120,7 +120,7 @@ Add the following dependency to your `pom.xml`
 <dependency>
    <groupId>technology.dice.open</groupId>
    <artifactId>dice-fairlink</artifactId>
-   <version>1.0.6</version>
+   <version>x.y.z</version>
 </dependency>
 ```
 
