@@ -134,7 +134,7 @@ public class AuroraReadReplicasDriverConnectSameListTest {
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(stepByStepExecutor);
+        new AuroraReadReplicasDriver(() -> stepByStepExecutor);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);

@@ -82,8 +82,7 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     final Driver mockMySqlDriver = mock(Driver.class);
 
     PowerMock.mockStatic(DriverManager.class);
-    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadReplicasDriver.class));
-    PowerMock.expectLastCall();
+    PowerMockito.doNothing().doThrow(Exception.class).when(DriverManager.class);
     EasyMock.expect(DriverManager.getDriver(VALID_JDBC_CLUSTER_RO_ENDPOINT_URL)).andReturn(mockMySqlDriver); // once driver is decided for the delegated URL type (be it MySQL, PostgreSQL etc) it will not change.
     PowerMock.replay(DriverManager.class);
 
@@ -131,7 +130,7 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(stepByStepExecutor);
+        new AuroraReadReplicasDriver(() -> stepByStepExecutor);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
     stepByStepExecutor.step();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);

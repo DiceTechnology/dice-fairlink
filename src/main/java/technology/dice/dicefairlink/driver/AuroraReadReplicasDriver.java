@@ -29,8 +29,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -53,21 +54,25 @@ public class AuroraReadReplicasDriver implements Driver {
   private final Map<String, Driver> delegates = new HashMap<>();
   private final Map<URI, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
 
-  private final ScheduledExecutorService executor;
+  private final Supplier<ScheduledExecutorService> executorSupplier;
 
   static {
     try {
       DriverManager.registerDriver(
-          new AuroraReadReplicasDriver(new ScheduledThreadPoolExecutor(1)));
+          new AuroraReadReplicasDriver());
       LOGGER.fine("AuroraReadReplicasDriver is now registered.");
     } catch (Exception e) {
       throw new RuntimeException("Can't register driver!", e);
     }
   }
 
-  public AuroraReadReplicasDriver(final ScheduledExecutorService executor) {
+  public AuroraReadReplicasDriver() {
+    this(() -> Executors.newScheduledThreadPool(1));
+  }
+
+  public AuroraReadReplicasDriver(final Supplier<ScheduledExecutorService> executorSupplier) {
     LOGGER.fine("Starting...");
-    this.executor = executor;
+    this.executorSupplier = executorSupplier;
   }
 
   @Override
@@ -244,7 +249,8 @@ public class AuroraReadReplicasDriver implements Driver {
         final AWSCredentialsProvider credentialsProvider = awsAuth(properties);
         final AuroraReadonlyEndpoint roEndpoint =
             new AuroraReadonlyEndpoint(
-                uri.getHost(), credentialsProvider, pollerInterval, region, executor);
+                uri.getHost(), credentialsProvider, pollerInterval, region,
+                executorSupplier.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", uri.getHost());
         this.auroraClusters.put(uri, roEndpoint);
