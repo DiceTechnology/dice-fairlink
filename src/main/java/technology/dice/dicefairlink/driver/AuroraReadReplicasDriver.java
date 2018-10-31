@@ -139,12 +139,6 @@ public class AuroraReadReplicasDriver implements Driver {
       return RegionUtils.getRegion(propertyRegion);
     }
 
-    final String commandLinveVariableRegion = System.getProperty(CLUSTER_REGION);
-    LOGGER.log(Level.FINE, "Region from command line variable: {0}", commandLinveVariableRegion);
-    if (commandLinveVariableRegion != null) {
-      return RegionUtils.getRegion(commandLinveVariableRegion);
-    }
-
     final String envRegion = System.getenv("AWS_DEFAULT_REGION");
     LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
     if (envRegion != null) {
