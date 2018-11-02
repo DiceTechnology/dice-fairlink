@@ -8,7 +8,7 @@ dice-fairlink does **not** handle read/write connections
 
 # Why do we need dice-fairlink (TL/DR version)?
 Because in many cases Aurora will not evenly distribute the connections amongst all the available read replicas.
-[image]
+![Connection distribution before and after dice-fairlink](images/result.png)
 
 # How can I use dice-fairlink (TL/DR version)?
 - Add dice-fairlink as a dependency to your JVM project
