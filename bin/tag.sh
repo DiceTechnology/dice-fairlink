@@ -5,7 +5,7 @@
 
 function slack {
   local PAYLOAD="payload={\"channel\": \"dice-opensource\", \"text\":\" $1 \", \"username\": \"Travis\", \"icon_url\": \"https://fst.slack-edge.com/66f9/img/services/travis_36.png\"}"
-  curl -X POST --data-urlencode "$PAYLOAD" $SLACK_URL
+  curl -X POST --data-urlencode "$PAYLOAD" $encrypted_SLACK_URL
 }
 
 # Get VERSION from top level POM
