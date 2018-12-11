@@ -5,6 +5,7 @@
 
 function slack {
   local PAYLOAD="payload={\"channel\": \"dice-opensource\", \"text\":\" $1 \", \"username\": \"Travis\", \"icon_url\": \"https://fst.slack-edge.com/66f9/img/services/travis_36.png\"}"
+  echo Sending message to $encrypted_SLACK_URL/$encrypted_SLACK_ROOM_API_KEY
   curl -X POST --data-urlencode "$PAYLOAD" $encrypted_SLACK_URL/$encrypted_SLACK_ROOM_API_KEY
 }
 
