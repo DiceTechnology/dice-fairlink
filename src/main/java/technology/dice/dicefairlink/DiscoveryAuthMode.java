@@ -10,7 +10,8 @@ import java.util.Optional;
 
 public enum DiscoveryAuthMode {
   BASIC,
-  ENVIRONMENT;
+  ENVIRONMENT,
+  INSTANCE;
 
   public static Optional<DiscoveryAuthMode> fromStringInsensitive(String candidate) {
     return Arrays.stream(DiscoveryAuthMode.values())

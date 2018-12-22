@@ -126,11 +126,11 @@ Add the following dependency to your `pom.xml`
 
 # Driver properties
 dice-fairlink uses the AWS RDS Java SDK to obtain information about the cluster, and needs a valid authentication
-source to establish the connection. Two modes of authentication are supported: `environment` or `basic`. Depending
+source to establish the connection. Two modes of authentication are supported: `environment`, `instance` or `basic`. Depending
 on the chosen mode, different driver properties are required. This is the full list of properties:
 - `auroraClusterRegion`: the AWS region of the cluster to connect to. Mandatory unless environment variable `AWS_DEFAULT_REGION` is set. If both provided,
 the value from data source properties object has priority.
-- `auroraDiscoveryAuthMode`: `{'environment'|'basic'}`. default: `environment`
+- `auroraDiscoveryAuthMode`: `{'environment'|'basic'|'instance'}`. default: `environment`
 - `auroraDiscoveryKeyId`: the AWS key id to connect to the Aurora cluster. Mandatory if the authentication mode is `basic`.
 Ignored otherwise.
 - `auroraDiscoverKeySecret`: the AWS key secret to connect to the Aurora cluster. Mandatory if the authentication mode is `basic`.

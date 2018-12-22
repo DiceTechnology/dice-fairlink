@@ -10,6 +10,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
@@ -167,6 +168,8 @@ public class AuroraReadReplicasDriver implements Driver {
                   AWS_BASIC_CREDENTIALS_KEY, AWS_BASIC_CREDENTIALS_SECRET));
         }
         return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
+      case INSTANCE:
+        return InstanceProfileCredentialsProvider.getInstance();
       default:
         ENVIRONMENT:
         if (LOGGER.isLoggable(Level.FINE)) {
