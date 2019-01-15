@@ -9,6 +9,7 @@ import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
@@ -153,8 +154,8 @@ public class AuroraReadReplicasDriver implements Driver {
   private AWSCredentialsProvider awsAuth(Properties properties) throws SQLException {
     DiscoveryAuthMode authMode =
         DiscoveryAuthMode.fromStringInsensitive(
-                properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "environment"))
-            .orElse(DiscoveryAuthMode.ENVIRONMENT);
+                properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "default_chain"))
+            .orElse(DiscoveryAuthMode.DEFAULT_CHAIN);
     LOGGER.log(Level.FINE, "authMode: {0}", authMode);
     switch (authMode) {
       case BASIC:
@@ -167,12 +168,14 @@ public class AuroraReadReplicasDriver implements Driver {
                   AWS_BASIC_CREDENTIALS_KEY, AWS_BASIC_CREDENTIALS_SECRET));
         }
         return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
-      default:
-        ENVIRONMENT:
+      case ENVIRONMENT:
         if (LOGGER.isLoggable(Level.FINE)) {
           logAwsAccessKeys();
         }
         return new EnvironmentVariableCredentialsProvider();
+      default:
+        // DEFAULT_CHAIN
+        return DefaultAWSCredentialsProviderChain.getInstance();
     }
   }
 
