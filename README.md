@@ -126,19 +126,51 @@ Add the following dependency to your `pom.xml`
 
 # Driver properties
 dice-fairlink uses the AWS RDS Java SDK to obtain information about the cluster, and needs a valid authentication
-source to establish the connection. Two modes of authentication are supported: `environment` or `basic`. Depending
+source to establish the connection. Two modes of authentication are supported: `default_chain`, `environment` or `basic`. Depending
 on the chosen mode, different driver properties are required. This is the full list of properties:
 - `auroraClusterRegion`: the AWS region of the cluster to connect to. Mandatory unless environment variable `AWS_DEFAULT_REGION` is set. If both provided,
 the value from data source properties object has priority.
-- `auroraDiscoveryAuthMode`: `{'environment'|'basic'}`. default: `environment`
+- `auroraDiscoveryAuthMode`: `{`default_chain`,'environment'|'basic'}`. default: `default_chain`
 - `auroraDiscoveryKeyId`: the AWS key id to connect to the Aurora cluster. Mandatory if the authentication mode is `basic`.
 Ignored otherwise.
 - `auroraDiscoverKeySecret`: the AWS key secret to connect to the Aurora cluster. Mandatory if the authentication mode is `basic`.
 Ignored otherwise.
 - `replicaPollInterval`: the interval, in seconds, between each refresh of the list of read replicas. default: `30`
 
-
 all properties (including the list above) will be passed to the underlying driver.
+
+# Discovery authentication modes
+In order to discover the members of a given cluster, dice-fairlink makes use of the AWS RDS SDK. This means the client application must provide some means 
+of authentication for dice-fairlink to execute the necessary API methods. The necessary IAM policy is as follows:
+```json
+{
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBClusters"
+      ],
+      "Resource": [
+        "arn:aws:rds:*:<account_id>:cluster:<cluster_name_regex>",
+        "arn:aws:rds:*:<account_id>:cluster:<cluster_name_regex>"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBInstances"
+      ],
+      "Resource": [
+        "arn:aws:rds:*:<account_id>:db:<member_name_regex>",
+        "arn:aws:rds:*:<accound_id>:db:<member_name_regex>"
+      ]
+    },
+``` 
+Note that the regexes above can be merely `*` depending on how precise you want your permissions to be.
+
+- default_chain mode: will use the AWS library default provider chain. This is, as of version `1.11.251`, the following order: environment, system properties,
+user profile, EC2 container credentials
+- environment: reads the key and secret from  `AWS_ACCESS_KEY_ID`/`AWS_ACCESS_KEY` and `AWS_SECRET_KEY`/`AWS_SECRET_ACCESS_KEY` variables
+- basic: takes the credentials from two driver properties as defined above
+
 
 # Logging
 To limit the dependencies of dice-fairlink, the `java.util.logging` package is used for logging.
