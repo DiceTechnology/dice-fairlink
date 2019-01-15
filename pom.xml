@@ -7,7 +7,7 @@
 
     <groupId>technology.dice.open</groupId>
     <artifactId>dice-fairlink</artifactId>
-    <version>1.0.0</version>
+    <version>1.2.0</version>
     <name>dice-fairlink</name>
 
     <packaging>jar</packaging>
