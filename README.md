@@ -171,6 +171,9 @@ user profile, EC2 container credentials
 - environment: reads the key and secret from  `AWS_ACCESS_KEY_ID`/`AWS_ACCESS_KEY` and `AWS_SECRET_KEY`/`AWS_SECRET_ACCESS_KEY` variables
 - basic: takes the credentials from two driver properties as defined above
 
+# Exclusion of replicas
+It is possible to exclude a read replica from being selected by dice-fairlink by tagging it with key=`Fairlink-Exclude` and value=`true`. dice-fairlink
+will treat them as not available and skip them when assigning connections. Tag changes will be picked up within the time specified in `replicaPollInterval` (see Driver Properties section)
 
 # Logging
 To limit the dependencies of dice-fairlink, the `java.util.logging` package is used for logging.
