@@ -32,9 +32,6 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -123,25 +120,5 @@ public class AuroraReadReplicasDriverConnectTest {
     Mockito.verify(mockEndpoint, times(2)).getAddress();
 
     PowerMock.verifyAll();
-  }
-
-  public static class StepByStepExecutor extends ScheduledThreadPoolExecutor {
-
-    private volatile Runnable task;
-
-    public StepByStepExecutor(int corePoolSize) {
-      super(corePoolSize);
-    }
-
-    @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(
-        Runnable task, long initialDelay, long period, TimeUnit unit) {
-      this.task = task;
-      return null;
-    }
-
-    public void step() {
-      task.run();
-    }
   }
 }
