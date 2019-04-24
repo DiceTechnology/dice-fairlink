@@ -5,10 +5,6 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.powermock.api.mockito.PowerMockito.mock;
-
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.rds.AmazonRDSAsync;
@@ -22,13 +18,7 @@ import com.amazonaws.services.rds.model.DescribeDBClustersResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import com.amazonaws.services.rds.model.ListTagsForResourceResult;
 import org.easymock.EasyMock;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,9 +28,23 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.util.Arrays;
+import java.util.Properties;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.powermock.api.mockito.PowerMockito.mock;
+
 @RunWith(PowerMockRunner.class)
 public class AuroraReadReplicasDriverConnectTest {
 
+  private static final ListTagsForResourceResult EMPTY_TAG_RESULT =
+      new ListTagsForResourceResult().withTagList();
   private static final String VALID_JDBC_URL =
       "jdbc:auroraro:postresql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_LOW_JDBC_URL =
@@ -104,6 +108,7 @@ public class AuroraReadReplicasDriverConnectTest {
     Mockito.when(mockDbInstance.getEndpoint()).thenReturn(mockEndpoint);
     Mockito.when(mockDbInstance.getDBInstanceStatus()).thenReturn("available");
     Mockito.when(mockEndpoint.getAddress()).thenReturn(VALID_ENDPOINT_ADDRESS);
+    Mockito.when(mockAmazonRDSAsync.listTagsForResource(any())).thenReturn(EMPTY_TAG_RESULT);
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     AuroraReadReplicasDriver auroraReadReplicasDriver =

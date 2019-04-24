@@ -5,11 +5,6 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.powermock.api.mockito.PowerMockito.mock;
-
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.rds.AmazonRDSAsync;
@@ -23,10 +18,7 @@ import com.amazonaws.services.rds.model.DescribeDBClustersResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.util.Arrays;
-import java.util.Properties;
+import com.amazonaws.services.rds.model.ListTagsForResourceResult;
 import org.easymock.EasyMock;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,9 +29,20 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import technology.dice.dicefairlink.driver.AuroraReadReplicasDriverConnectTest.StepByStepExecutor;
 
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.util.Arrays;
+import java.util.Properties;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.powermock.api.mockito.PowerMockito.mock;
+
 @RunWith(PowerMockRunner.class)
 public class AuroraReadReplicasDriverConnectAlternatingListTest {
-
+  private static final ListTagsForResourceResult EMPTY_TAG_RESULT =
+      new ListTagsForResourceResult().withTagList();
   private static final String VALID_JDBC_URL =
       "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_LOW_JDBC_URL_A =
@@ -113,6 +116,7 @@ public class AuroraReadReplicasDriverConnectAlternatingListTest {
         .thenReturn(mockDescribeDBClustersResult);
     Mockito.when(mockDescribeDBClustersResult.getDBClusters())
         .thenReturn(Arrays.asList(mockDbCluster));
+    Mockito.when(mockAmazonRDSAsync.listTagsForResource(any())).thenReturn(EMPTY_TAG_RESULT);
 
     Mockito.when(mockDbCluster.getDBClusterMembers())
         .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_B))
@@ -127,7 +131,7 @@ public class AuroraReadReplicasDriverConnectAlternatingListTest {
     Mockito.when(mockDbClusterMember_C.getDBInstanceIdentifier()).thenReturn(stubInstanceId_C);
 
     Mockito.when(
-        mockAmazonRDSAsync.describeDBInstances(Mockito.any(DescribeDBInstancesRequest.class)))
+            mockAmazonRDSAsync.describeDBInstances(Mockito.any(DescribeDBInstancesRequest.class)))
         .thenReturn(mockDbInstancesResult_A)
         .thenReturn(mockDbInstancesResult_B)
         .thenReturn(mockDbInstancesResult_A)
@@ -173,6 +177,5 @@ public class AuroraReadReplicasDriverConnectAlternatingListTest {
     verify(mockDbClusterMember_C, times(2)).getDBInstanceIdentifier();
     verify(mockDbInstance_C, times(2)).getEndpoint();
     verify(mockEndpoint_C, times(2)).getAddress();
-
   }
 }
