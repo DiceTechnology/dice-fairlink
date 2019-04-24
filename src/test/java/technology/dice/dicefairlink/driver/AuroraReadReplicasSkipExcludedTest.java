@@ -32,6 +32,8 @@ import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import java.sql.Driver;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -65,6 +67,8 @@ public class AuroraReadReplicasSkipExcludedTest {
         new DBClusterMember().withDBInstanceIdentifier("rr2").withIsClusterWriter(false);
     final DBClusterMember readReplica3Member =
         new DBClusterMember().withDBInstanceIdentifier("rr3").withIsClusterWriter(false);
+    final DBClusterMember readReplica4Member =
+        new DBClusterMember().withDBInstanceIdentifier("rr4").withIsClusterWriter(false);
 
     Mockito.when(mockAmazonRDSAsync.describeDBClusters(any()))
         .thenReturn(
@@ -73,7 +77,11 @@ public class AuroraReadReplicasSkipExcludedTest {
                     new DBCluster()
                         .withDBClusterIdentifier("cluster1")
                         .withDBClusterMembers(
-                            writer, readReplica1Member, readReplica2Member, readReplica3Member)));
+                            writer,
+                            readReplica1Member,
+                            readReplica2Member,
+                            readReplica3Member,
+                            readReplica4Member)));
     final DBInstance readReplicaInstance1 =
         new DBInstance()
             .withDBInstanceIdentifier("rr1")
@@ -92,6 +100,12 @@ public class AuroraReadReplicasSkipExcludedTest {
             .withEndpoint(new Endpoint().withAddress("address3"))
             .withDBInstanceArn("rr3")
             .withDBInstanceStatus("available");
+    final DBInstance readReplicaInstance4 =
+        new DBInstance()
+            .withDBInstanceIdentifier("rr4")
+            .withEndpoint(new Endpoint().withAddress("address4"))
+            .withDBInstanceArn("rr4")
+            .withDBInstanceStatus("available");
     Mockito.when(
             mockAmazonRDSAsync.describeDBInstances(
                 Mockito.eq(new DescribeDBInstancesRequest().withDBInstanceIdentifier("rr1"))))
@@ -104,6 +118,10 @@ public class AuroraReadReplicasSkipExcludedTest {
             mockAmazonRDSAsync.describeDBInstances(
                 Mockito.eq(new DescribeDBInstancesRequest().withDBInstanceIdentifier("rr3"))))
         .thenReturn(new DescribeDBInstancesResult().withDBInstances(readReplicaInstance3));
+    Mockito.when(
+            mockAmazonRDSAsync.describeDBInstances(
+                Mockito.eq(new DescribeDBInstancesRequest().withDBInstanceIdentifier("rr4"))))
+        .thenReturn(new DescribeDBInstancesResult().withDBInstances(readReplicaInstance4));
     Mockito.when(
             mockAmazonRDSAsync.listTagsForResource(
                 new ListTagsForResourceRequest().withResourceName("rr1")))
@@ -120,6 +138,12 @@ public class AuroraReadReplicasSkipExcludedTest {
             mockAmazonRDSAsync.listTagsForResource(
                 new ListTagsForResourceRequest().withResourceName("rr3")))
         .thenReturn(new ListTagsForResourceResult().withTagList(new ArrayList<>(0)));
+    Mockito.when(
+            mockAmazonRDSAsync.listTagsForResource(
+                new ListTagsForResourceRequest().withResourceName("rr4")))
+        .thenReturn(
+            new ListTagsForResourceResult()
+                .withTagList(new Tag().withKey("Another tag").withValue("another value")));
   }
 
   @Test
@@ -137,10 +161,15 @@ public class AuroraReadReplicasSkipExcludedTest {
             Region.getRegion(Regions.AP_NORTHEAST_1),
             stepByStepExecutor);
 
-    final String oneEndpoint = underTest.getNextReplica();
-    final String anotherEndpoint = underTest.getNextReplica();
-    Assert.assertNotEquals(oneEndpoint, anotherEndpoint);
-    Assert.assertNotEquals(oneEndpoint, "address2");
-    Assert.assertNotEquals(anotherEndpoint, "address2");
+    Set<String> endpoints = new HashSet<>(3);
+    endpoints.add(underTest.getNextReplica());
+    endpoints.add(underTest.getNextReplica());
+    endpoints.add(underTest.getNextReplica());
+
+    Assert.assertEquals(3, endpoints.size());
+    Assert.assertTrue(endpoints.contains("address1"));
+    Assert.assertFalse(endpoints.contains("address2"));
+    Assert.assertTrue(endpoints.contains("address3"));
+    Assert.assertTrue(endpoints.contains("address4"));
   }
 }
