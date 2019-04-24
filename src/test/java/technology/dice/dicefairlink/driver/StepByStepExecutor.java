@@ -14,7 +14,7 @@ public class StepByStepExecutor extends ScheduledThreadPoolExecutor {
 
   @Override
   public ScheduledFuture<?> scheduleAtFixedRate(
-      Runnable task, long initialDelay, long period, TimeUnit unit) {
+      Runnable task, long ignoredDelay, long ignoredPeriod, TimeUnit ignoredTimeUnit) {
     this.task = task;
     return null;
   }
