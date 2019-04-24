@@ -17,6 +17,8 @@ import com.amazonaws.services.rds.model.DescribeDBClustersResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
+import com.amazonaws.services.rds.model.ListTagsForResourceRequest;
+import com.amazonaws.services.rds.model.ListTagsForResourceResult;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
 import java.time.Duration;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
   private static final String ACTIVE_STATUS = "available";
+  private static final String EXCLUSION_TAG_KEY = "Fairlink-Exclude";
   private final Duration pollerInterval;
   private RandomisedCyclicIterator<String> replicas;
   private String readOnlyEndpoint;
@@ -101,7 +104,7 @@ public class AuroraReadonlyEndpoint {
               .filter(member -> !member.isClusterWriter())
               .collect(Collectors.toList());
       List<String> urls = new ArrayList<>(readReplicas.size());
-      for (DBClusterMember readReplica : readReplicas) {
+       for (DBClusterMember readReplica : readReplicas) {
         // the only functionally relevant branch of this iteration's branch is the final "else"
         // (replica has an endpoint
         // and is ACTIvE_STATUS. . All the other cases are for logging/visibility purposes only
@@ -124,6 +127,18 @@ public class AuroraReadonlyEndpoint {
                   clusterId));
         } else {
           DBInstance readerInstance = describeDBInstancesResult.getDBInstances().get(0);
+          final ListTagsForResourceResult listTagsForResourceResult =
+              client.listTagsForResource(
+                  new ListTagsForResourceRequest()
+                      .withResourceName(readerInstance.getDBInstanceArn()));
+          final boolean excluded =
+              listTagsForResourceResult
+                  .getTagList()
+                  .stream()
+                  .anyMatch(
+                      tag ->
+                          tag.getKey().equals(EXCLUSION_TAG_KEY)
+                              && Boolean.parseBoolean(tag.getValue()));
           Endpoint endpoint = readerInstance.getEndpoint();
           if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.getDBInstanceStatus())) {
             LOGGER.warning(
@@ -133,6 +148,11 @@ public class AuroraReadonlyEndpoint {
                     clusterId,
                     readerInstance.getDBInstanceStatus(),
                     ACTIVE_STATUS));
+          } else if (excluded) {
+            LOGGER.info(
+                String.format(
+                    "Found [%s] as a replica for [%s] but it's marked as excluded by the presence of the tag [%s] with value 'true'. Skipping",
+                    dbInstanceIdentifier, clusterId, EXCLUSION_TAG_KEY));
           } else if (endpoint == null) {
             LOGGER.log(
                 Level.WARNING,
@@ -174,7 +194,7 @@ public class AuroraReadonlyEndpoint {
           LOGGER.log(
               Level.WARNING,
               "No read replicas found for cluster [{0}]. Will fallback to [{1}] until individual members can be retrieved again",
-              new Object[]{clusterId, readOnlyEndpoint});
+              new Object[] {clusterId, readOnlyEndpoint});
         }
         replicas = RandomisedCyclicIterator.of(readerUrls);
         if (LOGGER.isLoggable(Level.FINE)) {

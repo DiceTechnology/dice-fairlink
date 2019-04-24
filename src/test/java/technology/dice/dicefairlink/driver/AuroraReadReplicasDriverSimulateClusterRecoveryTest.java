@@ -5,9 +5,6 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import static org.mockito.ArgumentMatchers.any;
-
-import static org.powermock.api.mockito.PowerMockito.mock;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.rds.AmazonRDSAsync;
@@ -21,10 +18,6 @@ import com.amazonaws.services.rds.model.DescribeDBClustersResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.util.Arrays;
-import java.util.Properties;
 import org.easymock.EasyMock;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,8 +26,15 @@ import org.powermock.api.easymock.PowerMock;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.util.Arrays;
 import java.util.Collections;
-import technology.dice.dicefairlink.driver.AuroraReadReplicasDriverConnectTest.StepByStepExecutor;
+import java.util.Properties;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
