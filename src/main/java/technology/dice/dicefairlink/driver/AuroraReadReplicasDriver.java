@@ -257,7 +257,7 @@ public class AuroraReadReplicasDriver implements Driver {
                       uri.getQuery(),
                       uri.getFragment())
                   .toASCIIString();
-      LOGGER.log(Level.INFO, "URI to connect to: {0}", delegatedReplicaUri);
+      LOGGER.log(Level.FINE, "URI to connect to: {0}", delegatedReplicaUri);
 
       addDriverForDelegate(delegate, delegatedReplicaUri);
 
