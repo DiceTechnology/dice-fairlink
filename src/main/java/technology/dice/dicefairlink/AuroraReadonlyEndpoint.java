@@ -98,76 +98,81 @@ public class AuroraReadonlyEndpoint {
 
     private List<String> replicaMembersOf(DBCluster cluster) {
       List<DBClusterMember> readReplicas =
-          cluster
-              .getDBClusterMembers()
-              .stream()
+          cluster.getDBClusterMembers().stream()
               .filter(member -> !member.isClusterWriter())
               .collect(Collectors.toList());
       List<String> urls = new ArrayList<>(readReplicas.size());
-       for (DBClusterMember readReplica : readReplicas) {
-        // the only functionally relevant branch of this iteration's branch is the final "else"
-        // (replica has an endpoint
-        // and is ACTIvE_STATUS. . All the other cases are for logging/visibility purposes only
-        final String dbInstanceIdentifier = readReplica.getDBInstanceIdentifier();
-        LOGGER.log(
-            Level.FINE,
-            String.format(
-                "Found read replica in cluster [%s]: [%s])", clusterId, dbInstanceIdentifier));
-
-        DescribeDBInstancesResult describeDBInstancesResult =
-            client.describeDBInstances(
-                new DescribeDBInstancesRequest().withDBInstanceIdentifier(dbInstanceIdentifier));
-        if (describeDBInstancesResult.getDBInstances().size() != 1) {
+      for (DBClusterMember readReplica : readReplicas) {
+        try {
+          // the only functionally relevant branch of this iteration's branch is the final "else"
+          // (replica has an endpoint
+          // and is ACTIvE_STATUS. . All the other cases are for logging/visibility purposes only
+          final String dbInstanceIdentifier = readReplica.getDBInstanceIdentifier();
           LOGGER.log(
-              Level.WARNING,
+              Level.FINE,
               String.format(
-                  "Got [%s] database instances for identifier [%s] (member of cluster [%s]). This is unexpected. Skipping.",
-                  describeDBInstancesResult.getDBInstances().size(),
-                  dbInstanceIdentifier,
-                  clusterId));
-        } else {
-          DBInstance readerInstance = describeDBInstancesResult.getDBInstances().get(0);
-          final ListTagsForResourceResult listTagsForResourceResult =
-              client.listTagsForResource(
-                  new ListTagsForResourceRequest()
-                      .withResourceName(readerInstance.getDBInstanceArn()));
-          final boolean excluded =
-              listTagsForResourceResult
-                  .getTagList()
-                  .stream()
-                  .anyMatch(
-                      tag ->
-                          tag.getKey().equals(EXCLUSION_TAG_KEY)
-                              && Boolean.parseBoolean(tag.getValue()));
-          Endpoint endpoint = readerInstance.getEndpoint();
-          if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.getDBInstanceStatus())) {
-            LOGGER.warning(
-                String.format(
-                    "Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
-                    dbInstanceIdentifier,
-                    clusterId,
-                    readerInstance.getDBInstanceStatus(),
-                    ACTIVE_STATUS));
-          } else if (excluded) {
-            LOGGER.info(
-                String.format(
-                    "Found [%s] as a replica for [%s] but it's marked as excluded by the presence of the tag [%s] with value 'true'. Skipping",
-                    dbInstanceIdentifier, clusterId, EXCLUSION_TAG_KEY));
-          } else if (endpoint == null) {
+                  "Found read replica in cluster [%s]: [%s])", clusterId, dbInstanceIdentifier));
+
+          DescribeDBInstancesResult describeDBInstancesResult =
+              client.describeDBInstances(
+                  new DescribeDBInstancesRequest().withDBInstanceIdentifier(dbInstanceIdentifier));
+          if (describeDBInstancesResult.getDBInstances().size() != 1) {
             LOGGER.log(
                 Level.WARNING,
                 String.format(
-                    "Found [%s] as a replica for [%s] but it does not have a reachable address. Maybe it is still being created. Skipping",
-                    dbInstanceIdentifier, clusterId));
+                    "Got [%s] database instances for identifier [%s] (member of cluster [%s]). This is unexpected. Skipping.",
+                    describeDBInstancesResult.getDBInstances().size(),
+                    dbInstanceIdentifier,
+                    clusterId));
           } else {
-            final String endPointAddress = endpoint.getAddress();
-            LOGGER.log(
-                Level.FINE,
-                String.format(
-                    "Accepted instance with id [%s] with URL=[%s] to cluster [%s]",
-                    dbInstanceIdentifier, endPointAddress, clusterId));
-            urls.add(endPointAddress);
+            DBInstance readerInstance = describeDBInstancesResult.getDBInstances().get(0);
+            final ListTagsForResourceResult listTagsForResourceResult =
+                client.listTagsForResource(
+                    new ListTagsForResourceRequest()
+                        .withResourceName(readerInstance.getDBInstanceArn()));
+            final boolean excluded =
+                listTagsForResourceResult.getTagList().stream()
+                    .anyMatch(
+                        tag ->
+                            tag.getKey().equals(EXCLUSION_TAG_KEY)
+                                && Boolean.parseBoolean(tag.getValue()));
+            Endpoint endpoint = readerInstance.getEndpoint();
+            if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.getDBInstanceStatus())) {
+              LOGGER.warning(
+                  String.format(
+                      "Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
+                      dbInstanceIdentifier,
+                      clusterId,
+                      readerInstance.getDBInstanceStatus(),
+                      ACTIVE_STATUS));
+            } else if (excluded) {
+              LOGGER.info(
+                  String.format(
+                      "Found [%s] as a replica for [%s] but it's marked as excluded by the presence of the tag [%s] with value 'true'. Skipping",
+                      dbInstanceIdentifier, clusterId, EXCLUSION_TAG_KEY));
+            } else if (endpoint == null) {
+              LOGGER.log(
+                  Level.WARNING,
+                  String.format(
+                      "Found [%s] as a replica for [%s] but it does not have a reachable address. Maybe it is still being created. Skipping",
+                      dbInstanceIdentifier, clusterId));
+            } else {
+              final String endPointAddress = endpoint.getAddress();
+              LOGGER.log(
+                  Level.FINE,
+                  String.format(
+                      "Accepted instance with id [%s] with URL=[%s] to cluster [%s]",
+                      dbInstanceIdentifier, endPointAddress, clusterId));
+              urls.add(endPointAddress);
+            }
           }
+        } catch (Exception ex) {
+          LOGGER.log(
+              Level.SEVERE,
+              String.format(
+                  "Got exception when processing [%s] member of [%s]. Skipping.",
+                  readReplica.getDBInstanceIdentifier(), clusterId),
+              ex);
         }
       }
       return urls;
