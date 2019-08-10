@@ -5,17 +5,11 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
-import technology.dice.dicefairlink.DiscoveryAuthMode;
 import technology.dice.dicefairlink.ParsedUrl;
+import technology.dice.dicefairlink.config.FairlinkConfiguration;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,18 +33,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AuroraReadReplicasDriver implements Driver {
-
-  public static final String AWS_AUTH_MODE_PROPERTY_NAME = "auroraDiscoveryAuthMode";
-  public static final String AWS_BASIC_CREDENTIALS_KEY = "auroraDiscoveryKeyId";
-  public static final String AWS_BASIC_CREDENTIALS_SECRET = "auroraDiscoverKeySecret";
-  public static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
-  public static final String CLUSTER_REGION = "auroraClusterRegion";
-
   private static final Logger LOGGER = Logger.getLogger(AuroraReadReplicasDriver.class.getName());
   private static final String DRIVER_PROTOCOL = "auroraro";
   private static final Pattern driverPattern =
       Pattern.compile("jdbc:" + DRIVER_PROTOCOL + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
-  private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private static final String JDBC_PREFIX = "jdbc";
   private final Map<String, Driver> delegates = new HashMap<>();
   private final Map<URI, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
@@ -133,82 +119,6 @@ public class AuroraReadReplicasDriver implements Driver {
     return false;
   }
 
-  private Region getRegion(final Properties properties) {
-    final String propertyRegion = properties.getProperty(CLUSTER_REGION);
-    LOGGER.log(Level.FINE, "Region from property: {0}", propertyRegion);
-    if (propertyRegion != null) {
-      return RegionUtils.getRegion(propertyRegion);
-    }
-
-    final String envRegion = System.getenv("AWS_DEFAULT_REGION");
-    LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
-    if (envRegion != null) {
-      return RegionUtils.getRegion(envRegion);
-    }
-    throw new RuntimeException(
-        "Region is null. Please either provide property ["
-            + CLUSTER_REGION
-            + "] or set the environment variable [AWS_DEFAULT_REGION]");
-  }
-
-  private AWSCredentialsProvider awsAuth(Properties properties) throws SQLException {
-    DiscoveryAuthMode authMode =
-        DiscoveryAuthMode.fromStringInsensitive(
-                properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "default_chain"))
-            .orElse(DiscoveryAuthMode.DEFAULT_CHAIN);
-    LOGGER.log(Level.FINE, "authMode: {0}", authMode);
-    switch (authMode) {
-      case BASIC:
-        String key = properties.getProperty(AWS_BASIC_CREDENTIALS_KEY);
-        String secret = properties.getProperty(AWS_BASIC_CREDENTIALS_SECRET);
-        if (key == null || secret == null) {
-          throw new SQLException(
-              String.format(
-                  "For basic authentication both [%s] and [%s] must both be set",
-                  AWS_BASIC_CREDENTIALS_KEY, AWS_BASIC_CREDENTIALS_SECRET));
-        }
-        return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
-      case ENVIRONMENT:
-        if (LOGGER.isLoggable(Level.FINE)) {
-          logAwsAccessKeys();
-        }
-        return new EnvironmentVariableCredentialsProvider();
-      default:
-        // DEFAULT_CHAIN
-        return DefaultAWSCredentialsProviderChain.getInstance();
-    }
-  }
-
-  private void logAwsAccessKeys() {
-    final String accessKey =
-        getDualEnvironmentVariable(
-            SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR,
-            SDKGlobalConfiguration.ALTERNATE_ACCESS_KEY_ENV_VAR);
-    final String secretKey =
-        getDualEnvironmentVariable(
-            SDKGlobalConfiguration.SECRET_KEY_ENV_VAR,
-            SDKGlobalConfiguration.ALTERNATE_SECRET_KEY_ENV_VAR);
-    LOGGER.log(
-        Level.FINE,
-        String.format(
-            "accessKey: %s**",
-            accessKey != null && accessKey.length() > 4 ? accessKey.substring(0, 3) : ""));
-    LOGGER.log(
-        Level.FINE,
-        String.format(
-            "secretKey: %s**",
-            secretKey != null && secretKey.length() > 4 ? secretKey.substring(0, 3) : ""));
-  }
-
-  private String getDualEnvironmentVariable(
-      final String primaryVarName, final String secondaryVarName) {
-    final String primaryVal = System.getenv(primaryVarName);
-    if (primaryVal == null) {
-      return System.getenv(secondaryVarName);
-    }
-    return primaryVal;
-  }
-
   private Optional<ParsedUrl> parseUrlAndCacheDriver(final String url, final Properties properties)
       throws SQLException, URISyntaxException {
     LOGGER.log(Level.FINE, "URI: {0}", url);
@@ -221,16 +131,19 @@ public class AuroraReadReplicasDriver implements Driver {
     LOGGER.log(Level.FINE, "Delegate driver: {0}", delegate);
     final String clusterURI = DRIVER_PROTOCOL + ":" + matcher.group("uri");
     try {
+      FairlinkConfiguration fairlinkConfiguration =
+          new FairlinkConfiguration(url, properties, System.getenv());
       URI uri = new URI(clusterURI);
       LOGGER.log(Level.FINE, "Driver URI: {0}", uri);
-      final Region region = getRegion(properties);
+      final Region region = fairlinkConfiguration.getAuroraClusterRegion();
       LOGGER.log(Level.FINE, "Region: {0}", region);
 
       if (!this.auroraClusters.containsKey(uri)) {
         // because AWS credentials, region and poll interval properties
         // are only processed once per uri, the driver does not support dynamically changing them
-        final Duration pollerInterval = getPollerInterval(properties);
-        final AWSCredentialsProvider credentialsProvider = awsAuth(properties);
+        final Duration pollerInterval = fairlinkConfiguration.getReplicaPollInterval();
+        final AWSCredentialsProvider credentialsProvider =
+            fairlinkConfiguration.getAwsCredentialsProvider();
         final AuroraReadonlyEndpoint roEndpoint =
             new AuroraReadonlyEndpoint(
                 uri.getHost(), credentialsProvider, pollerInterval, region, executorSupplier.get());
@@ -271,19 +184,6 @@ public class AuroraReadReplicasDriver implements Driver {
   private void addDriverForDelegate(String delegate, final String stringURI) throws SQLException {
     if (!this.delegates.containsKey(delegate)) {
       this.delegates.put(delegate, DriverManager.getDriver(stringURI));
-    }
-  }
-
-  private Duration getPollerInterval(Properties properties) {
-    try {
-      return Duration.ofSeconds(
-          Integer.parseInt(properties.getProperty(REPLICA_POLL_INTERVAL_PROPERTY_NAME)));
-    } catch (IllegalArgumentException | NullPointerException e) {
-      LOGGER.warning(
-          String.format(
-              "No or invalid polling interval specified. Using default replica poll interval of %s",
-              DEFAULT_POLLER_INTERVAL));
-      return DEFAULT_POLLER_INTERVAL;
     }
   }
 }

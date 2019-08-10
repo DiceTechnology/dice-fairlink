@@ -3,7 +3,7 @@
  *
  * Please see distribution for license.
  */
-package technology.dice.dicefairlink.discovery;
+package technology.dice.dicefairlink.discovery.awsapi;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Region;
@@ -19,6 +19,9 @@ import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
 import com.amazonaws.services.rds.model.ListTagsForResourceRequest;
 import com.amazonaws.services.rds.model.ListTagsForResourceResult;
+import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
+import technology.dice.dicefairlink.discovery.ClusterInfo;
+import technology.dice.dicefairlink.discovery.DiscoveryCallback;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
 import java.util.ArrayList;
