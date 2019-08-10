@@ -113,6 +113,7 @@ public class AuroraReadReplicasDriverConnectSameListTest {
         .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_B));
     Mockito.when(mockDbClusterMember_A.isClusterWriter()).thenReturn(false);
     Mockito.when(mockDbClusterMember_A.getDBInstanceIdentifier()).thenReturn(stubInstanceId_A);
+    Mockito.when(mockDbCluster.getReaderEndpoint()).thenReturn("readerEndpoint");
 
     Mockito.when(mockDbClusterMember_B.isClusterWriter()).thenReturn(false);
     Mockito.when(mockDbClusterMember_B.getDBInstanceIdentifier()).thenReturn(stubInstanceId_B);

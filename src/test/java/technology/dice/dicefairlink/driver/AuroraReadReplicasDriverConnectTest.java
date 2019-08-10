@@ -97,6 +97,7 @@ public class AuroraReadReplicasDriverConnectTest {
         .thenReturn(Arrays.asList(mockDbCluster));
     Mockito.when(mockDbCluster.getDBClusterMembers())
         .thenReturn(Arrays.asList(mockDbClusterMember));
+    Mockito.when(mockDbCluster.getReaderEndpoint()).thenReturn("readerEndpoint");
     Mockito.when(mockDbClusterMember.isClusterWriter()).thenReturn(false);
     Mockito.when(mockDbClusterMember.getDBInstanceIdentifier()).thenReturn(stubInstanceId);
     Mockito.when(mockAmazonRDSAsync.describeDBInstances(any(DescribeDBInstancesRequest.class)))

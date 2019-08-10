@@ -29,7 +29,6 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 
-import java.sql.Driver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -40,11 +39,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 
 @RunWith(PowerMockRunner.class)
 public class AuroraReadReplicasSkipExcludedTest {
-  private static final String VALID_JDBC_URL =
-      "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
   @Mock AmazonRDSAsyncClientBuilder mockAmazonRDSAsyncClientBuilder;
   @Mock private AmazonRDSAsync mockAmazonRDSAsync;
-  @Mock private Driver mockMySqlDriver;
 
   @Before
   public void before() {
@@ -76,6 +72,7 @@ public class AuroraReadReplicasSkipExcludedTest {
                 .withDBClusters(
                     new DBCluster()
                         .withDBClusterIdentifier("cluster1")
+                        .withReaderEndpoint("readOnlyEndpoint")
                         .withDBClusterMembers(
                             writer,
                             readReplica1Member,

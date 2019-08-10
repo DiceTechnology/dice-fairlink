@@ -121,6 +121,7 @@ public class AuroraReadReplicasDriverConnectAlternatingListTest {
         .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_B))
         .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_C))
         .thenReturn(Arrays.asList(mockDbClusterMember_B, mockDbClusterMember_C));
+    Mockito.when(mockDbCluster.getReaderEndpoint()).thenReturn("readerEndpoint");
 
     Mockito.when(mockDbClusterMember_A.isClusterWriter()).thenReturn(false);
     Mockito.when(mockDbClusterMember_A.getDBInstanceIdentifier()).thenReturn(stubInstanceId_A);
