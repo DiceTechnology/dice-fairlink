@@ -5,13 +5,12 @@
  */
 package technology.dice.dicefairlink;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.regions.Region;
-import technology.dice.dicefairlink.discovery.awsapi.AwsApiReplicasFinder;
+import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
+import technology.dice.dicefairlink.discovery.awsapi.ReplicasFinderFactory;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
-import java.time.Duration;
+import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,35 +23,35 @@ public class AuroraReadonlyEndpoint {
   private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
   public AuroraReadonlyEndpoint(
-      String clusterId,
-      AWSCredentialsProvider credentialsProvider,
-      Duration pollerInterval,
-      Region region,
-      ScheduledExecutorService executor) {
+      URI uri, FairlinkConfiguration fairlinkConfiguration, ScheduledExecutorService executor) {
 
     BaseReadReplicasFinder finder =
-        new AwsApiReplicasFinder(
-            clusterId,
-            credentialsProvider,
-            region,
+        ReplicasFinderFactory.getFinder(
+            fairlinkConfiguration,
+            uri,
             discoveredReplicas -> {
               replicas = discoveredReplicas;
               if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.log(
                     Level.FINE,
                     String.format(
-                        "Retrieved [%s] read replicas for cluster id [%s] with. List will be refreshed in [%s] seconds",
-                        replicas.size(), clusterId, pollerInterval.getSeconds()));
+                        "Retrieved [%s] read replicas for cluster identified by [%s] with. List will be refreshed in [%s]",
+                        replicas.size(),
+                        uri.getHost(),
+                        fairlinkConfiguration.getReplicaPollInterval()));
               }
             });
     replicas = finder.init();
     LOGGER.log(
         Level.INFO,
         String.format(
-            "Initialised driver for cluster id [%s] with [%s] read replicas. List will be refreshed every [%s] seconds",
-            clusterId, replicas.size(), pollerInterval.getSeconds()));
+            "Initialised driver for cluster identified by [%s] with [%s] read replicas. List will be refreshed every [%s]",
+            uri.getHost(), replicas.size(), fairlinkConfiguration.getReplicaPollInterval()));
     executor.scheduleAtFixedRate(
-        finder, pollerInterval.getSeconds(), pollerInterval.getSeconds(), TimeUnit.SECONDS);
+        finder,
+        fairlinkConfiguration.getReplicaPollInterval().getSeconds(),
+        fairlinkConfiguration.getReplicaPollInterval().getSeconds(),
+        TimeUnit.SECONDS);
   }
 
   public String getNextReplica() {

@@ -5,7 +5,6 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Region;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import technology.dice.dicefairlink.ParsedUrl;
@@ -18,7 +17,6 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -132,7 +130,7 @@ public class AuroraReadReplicasDriver implements Driver {
     final String clusterURI = DRIVER_PROTOCOL + ":" + matcher.group("uri");
     try {
       FairlinkConfiguration fairlinkConfiguration =
-          new FairlinkConfiguration(url, properties, System.getenv());
+          new FairlinkConfiguration(properties, System.getenv());
       URI uri = new URI(clusterURI);
       LOGGER.log(Level.FINE, "Driver URI: {0}", uri);
       final Region region = fairlinkConfiguration.getAuroraClusterRegion();
@@ -141,12 +139,8 @@ public class AuroraReadReplicasDriver implements Driver {
       if (!this.auroraClusters.containsKey(uri)) {
         // because AWS credentials, region and poll interval properties
         // are only processed once per uri, the driver does not support dynamically changing them
-        final Duration pollerInterval = fairlinkConfiguration.getReplicaPollInterval();
-        final AWSCredentialsProvider credentialsProvider =
-            fairlinkConfiguration.getAwsCredentialsProvider();
         final AuroraReadonlyEndpoint roEndpoint =
-            new AuroraReadonlyEndpoint(
-                uri.getHost(), credentialsProvider, pollerInterval, region, executorSupplier.get());
+            new AuroraReadonlyEndpoint(uri, fairlinkConfiguration, executorSupplier.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", uri.getHost());
         this.auroraClusters.put(uri, roEndpoint);

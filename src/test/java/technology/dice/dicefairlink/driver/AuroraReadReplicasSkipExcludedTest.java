@@ -28,10 +28,15 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
+import technology.dice.dicefairlink.config.FairlinkConfiguration;
+import technology.dice.dicefairlink.config.ReplicasDiscoveryMode;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -148,15 +153,20 @@ public class AuroraReadReplicasSkipExcludedTest {
     AmazonRDSAsyncClient.class,
     AmazonRDSAsyncClientBuilder.class,
   })
-  public void exclusionTagsObserved() {
+  public void exclusionTagsObserved() throws URISyntaxException {
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
-    final AuroraReadonlyEndpoint underTest =
-        new AuroraReadonlyEndpoint(
-            "cluster1",
+    Properties p = new Properties();
+    p.setProperty("", "");
+    FairlinkConfiguration fairlinkConfiguration =
+        new FairlinkConfiguration(
+            Region.getRegion(Regions.AP_NORTHEAST_1),
             new AWSStaticCredentialsProvider(new BasicAWSCredentials("key", "secret")),
             Duration.ofSeconds(10),
-            Region.getRegion(Regions.AP_NORTHEAST_1),
-            stepByStepExecutor);
+            ReplicasDiscoveryMode.RDS_API,
+            System.getenv());
+
+    final AuroraReadonlyEndpoint underTest =
+        new AuroraReadonlyEndpoint(new URI("cluster1"), fairlinkConfiguration, stepByStepExecutor);
 
     Set<String> endpoints = new HashSet<>(3);
     endpoints.add(underTest.getNextReplica());

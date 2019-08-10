@@ -22,8 +22,8 @@ public class FairlinkConfiguration {
   public static final String AWS_BASIC_CREDENTIALS_KEY = "auroraDiscoveryKeyId";
   public static final String AWS_BASIC_CREDENTIALS_SECRET = "auroraDiscoverKeySecret";
   public static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
+  public static final String DISCOVERY_MODE_PROPERTY_NAME = "discoveryMode";
   public static final String CLUSTER_REGION = "auroraClusterRegion";
-
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private final Optional<Region> auroraClusterRegion;
   private final AWSCredentialsProvider awsCredentialsProvider;
@@ -31,22 +31,59 @@ public class FairlinkConfiguration {
   private final ReplicasDiscoveryMode replicasDiscoveryMode;
   private final Map<String, String> env;
 
-  public FairlinkConfiguration(String url, Properties properties) {
-    this(url, properties, System.getenv());
+  public FairlinkConfiguration(
+      Region auroraClusterRegion,
+      AWSCredentialsProvider awsCredentialsProvider,
+      Duration replicaPollInterval,
+      ReplicasDiscoveryMode replicasDiscoveryMode,
+      Map<String, String> env) {
+    this.env = env;
+    this.auroraClusterRegion = Optional.of(auroraClusterRegion);
+    this.awsCredentialsProvider = awsCredentialsProvider;
+    this.replicaPollInterval = replicaPollInterval;
+    this.replicasDiscoveryMode = replicasDiscoveryMode;
+    this.validateConfiguration();
   }
 
-  public FairlinkConfiguration(String url, Properties properties, Map<String, String> env) {
+  public FairlinkConfiguration(Properties properties) {
+    this(properties, System.getenv());
+  }
+
+  public FairlinkConfiguration(Properties properties, Map<String, String> env) {
     this.env = env;
-    this.auroraClusterRegion = Optional.ofNullable(this.resolveRegion(properties));
+    this.auroraClusterRegion = this.resolveRegion(properties);
     this.awsCredentialsProvider = this.awsAuth(properties);
     this.replicaPollInterval = this.resolvePollerInterval(properties);
-    this.replicasDiscoveryMode = null;
+    this.replicasDiscoveryMode = this.resolveDiscoveryMode(properties);
+    this.validateConfiguration();
+  }
+
+  private void validateConfiguration() {
+    if (this.replicasDiscoveryMode == ReplicasDiscoveryMode.RDS_API) {
+      this.validateSqlDiscovery();
+    } else {
+      this.validateAwsApiDiscovery();
+    }
+  }
+
+  private void validateSqlDiscovery() {}
+
+  private void validateAwsApiDiscovery() {
+    this.auroraClusterRegion.orElseThrow(
+        () -> new IllegalStateException("Region is mandatory for AWS API discovery mode"));
+  }
+
+  private ReplicasDiscoveryMode resolveDiscoveryMode(Properties properties) {
+    return ReplicasDiscoveryMode.fromStringInsensitive(
+            properties.getProperty(DISCOVERY_MODE_PROPERTY_NAME, ReplicasDiscoveryMode.RDS_API.name()))
+        .orElse(ReplicasDiscoveryMode.RDS_API);
   }
 
   private AWSCredentialsProvider awsAuth(Properties properties) {
     AwsApiDiscoveryAuthMode authMode =
         AwsApiDiscoveryAuthMode.fromStringInsensitive(
-                properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "default_chain"))
+                properties.getProperty(
+                    AWS_AUTH_MODE_PROPERTY_NAME, AwsApiDiscoveryAuthMode.DEFAULT_CHAIN.name()))
             .orElse(AwsApiDiscoveryAuthMode.DEFAULT_CHAIN);
     LOGGER.log(Level.FINE, "authMode: {0}", authMode);
     switch (authMode) {
@@ -54,7 +91,7 @@ public class FairlinkConfiguration {
         String key = properties.getProperty(AWS_BASIC_CREDENTIALS_KEY);
         String secret = properties.getProperty(AWS_BASIC_CREDENTIALS_SECRET);
         if (key == null || secret == null) {
-          throw new RuntimeException(
+          throw new IllegalStateException(
               String.format(
                   "For basic authentication both [%s] and [%s] must both be set",
                   AWS_BASIC_CREDENTIALS_KEY, AWS_BASIC_CREDENTIALS_SECRET));
@@ -71,22 +108,19 @@ public class FairlinkConfiguration {
     }
   }
 
-  private Region resolveRegion(final Properties properties) {
+  private Optional<Region> resolveRegion(final Properties properties) {
     final String propertyRegion = properties.getProperty(CLUSTER_REGION);
     LOGGER.log(Level.FINE, "Region from property: {0}", propertyRegion);
     if (propertyRegion != null) {
-      return RegionUtils.getRegion(propertyRegion);
+      return Optional.of(RegionUtils.getRegion(propertyRegion));
     }
 
     final String envRegion = this.env.get("AWS_DEFAULT_REGION");
     LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
     if (envRegion != null) {
-      return RegionUtils.getRegion(envRegion);
+      return Optional.of(RegionUtils.getRegion(envRegion));
     }
-    throw new RuntimeException(
-        "Region is null. Please either provide property ["
-            + CLUSTER_REGION
-            + "] or set the environment variable [AWS_DEFAULT_REGION]");
+    return Optional.empty();
   }
 
   private void logAwsAccessKeys() {
@@ -142,5 +176,9 @@ public class FairlinkConfiguration {
 
   public Region getAuroraClusterRegion() {
     return auroraClusterRegion.get();
+  }
+
+  public ReplicasDiscoveryMode getReplicasDiscoveryMode() {
+    return replicasDiscoveryMode;
   }
 }

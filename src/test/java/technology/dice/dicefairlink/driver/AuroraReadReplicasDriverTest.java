@@ -5,12 +5,13 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
 
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AuroraReadReplicasDriverTest {
 
@@ -47,7 +48,7 @@ public class AuroraReadReplicasDriverTest {
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, null); // last call must throw
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test(expected = SQLException.class)
   public void failToConnectToValidUrl_emptyProperties_andNoRegionAvailable() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
         new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
