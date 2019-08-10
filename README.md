@@ -27,7 +27,7 @@ to the driver of the protocol `XXXX` (which needs to be loadable by the JVM clas
 In a cluster named `my-cluster` with three read replicas `my-cluster-r1`, `my-cluster-r2` and, `my-cluster-r3`, and
 the following connection string
 ```java
-String connectionString = "jdbc:auroraro:mysql//my-cluster/my-schema";
+String connectionString = "jdbc:auroraro:mysql://my-cluster/my-schema";
 ```
 dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
 and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
