@@ -7,7 +7,7 @@ package technology.dice.dicefairlink;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Region;
-import technology.dice.dicefairlink.discovery.AuroraReplicasFinder2;
+import technology.dice.dicefairlink.discovery.AwsApiReplicasFinder;
 import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
@@ -31,7 +31,7 @@ public class AuroraReadonlyEndpoint {
       ScheduledExecutorService executor) {
 
     BaseReadReplicasFinder finder =
-        new AuroraReplicasFinder2(
+        new AwsApiReplicasFinder(
             clusterId,
             credentialsProvider,
             region,

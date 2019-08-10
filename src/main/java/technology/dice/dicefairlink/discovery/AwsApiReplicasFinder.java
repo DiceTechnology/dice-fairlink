@@ -23,14 +23,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class AuroraReplicasFinder2 extends BaseReadReplicasFinder {
-  private static final Logger LOGGER = Logger.getLogger(AuroraReplicasFinder2.class.getName());
+public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
+  private static final Logger LOGGER = Logger.getLogger(AwsApiReplicasFinder.class.getName());
   private static final String ACTIVE_STATUS = "available";
   private static final String EXCLUSION_TAG_KEY = "Fairlink-Exclude";
   private final String clusterId;
   private final AmazonRDSAsync client;
 
-  public AuroraReplicasFinder2(
+  public AwsApiReplicasFinder(
       String clusterId,
       AWSCredentialsProvider credentialsProvider,
       Region region,
