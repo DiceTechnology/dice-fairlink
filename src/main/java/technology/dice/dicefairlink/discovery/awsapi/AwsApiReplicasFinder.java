@@ -39,13 +39,13 @@ public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
   private final AmazonRDSAsync client;
 
   public AwsApiReplicasFinder(
-      String clusterId,
+      String hostname,
       AWSCredentialsProvider credentialsProvider,
       Region region,
       DiscoveryCallback callback) {
     super(callback);
-    this.clusterId = clusterId;
-    LOGGER.log(Level.INFO, "Cluster ID: {0}", clusterId);
+    this.clusterId = hostname;
+    LOGGER.log(Level.INFO, "Cluster ID: {0}", hostname);
     LOGGER.log(Level.INFO, "AWS Region: {0}", region);
     this.client =
         AmazonRDSAsyncClient.asyncBuilder()
