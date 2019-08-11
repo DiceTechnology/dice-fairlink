@@ -60,9 +60,9 @@ public class FairlinkConfiguration {
 
   private void validateConfiguration() {
     if (this.replicasDiscoveryMode == ReplicasDiscoveryMode.RDS_API) {
-      this.validateSqlDiscovery();
-    } else {
       this.validateAwsApiDiscovery();
+    } else {
+      this.validateSqlDiscovery();
     }
   }
 
@@ -75,7 +75,8 @@ public class FairlinkConfiguration {
 
   private ReplicasDiscoveryMode resolveDiscoveryMode(Properties properties) {
     return ReplicasDiscoveryMode.fromStringInsensitive(
-            properties.getProperty(DISCOVERY_MODE_PROPERTY_NAME, ReplicasDiscoveryMode.RDS_API.name()))
+            properties.getProperty(
+                DISCOVERY_MODE_PROPERTY_NAME, ReplicasDiscoveryMode.RDS_API.name()))
         .orElse(ReplicasDiscoveryMode.RDS_API);
   }
 

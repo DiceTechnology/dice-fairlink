@@ -48,7 +48,7 @@ public class AuroraReadReplicasDriverTest {
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, null); // last call must throw
   }
 
-  @Test(expected = SQLException.class)
+  @Test(expected = IllegalStateException.class)
   public void failToConnectToValidUrl_emptyProperties_andNoRegionAvailable() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
         new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
