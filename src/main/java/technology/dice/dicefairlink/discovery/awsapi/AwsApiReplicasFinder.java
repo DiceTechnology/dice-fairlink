@@ -105,16 +105,29 @@ public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
                   clusterId));
         } else {
           DBInstance readerInstance = describeDBInstancesResult.getDBInstances().get(0);
-          final ListTagsForResourceResult listTagsForResourceResult =
-              client.listTagsForResource(
-                  new ListTagsForResourceRequest()
-                      .withResourceName(readerInstance.getDBInstanceArn()));
-          final boolean excluded =
-              listTagsForResourceResult.getTagList().stream()
-                  .anyMatch(
-                      tag ->
-                          tag.getKey().equals(EXCLUSION_TAG_KEY)
-                              && Boolean.parseBoolean(tag.getValue()));
+
+          boolean excluded;
+          try {
+            final ListTagsForResourceResult listTagsForResourceResult =
+                client.listTagsForResource(
+                    new ListTagsForResourceRequest()
+                        .withResourceName(readerInstance.getDBInstanceArn()));
+
+            excluded =
+                listTagsForResourceResult.getTagList().stream()
+                    .anyMatch(
+                        tag ->
+                            tag.getKey().equals(EXCLUSION_TAG_KEY)
+                                && Boolean.parseBoolean(tag.getValue()));
+          } catch (Exception e) {
+            excluded = false;
+            LOGGER.log(
+                Level.WARNING,
+                String.format(
+                    "Error fetching tags for replica [%s] of cluster [%]. Will consider it not excluded.",
+                    dbInstanceIdentifier, clusterId),
+                e);
+          }
           Endpoint endpoint = readerInstance.getEndpoint();
           if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.getDBInstanceStatus())) {
             LOGGER.warning(
