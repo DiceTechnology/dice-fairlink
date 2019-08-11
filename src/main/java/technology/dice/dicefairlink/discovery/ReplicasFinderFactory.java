@@ -1,7 +1,8 @@
-package technology.dice.dicefairlink.discovery.awsapi;
+package technology.dice.dicefairlink.discovery;
 
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.DiscoveryCallback;
+import technology.dice.dicefairlink.discovery.awsapi.AwsApiReplicasFinder;
 
 import java.net.URI;
 

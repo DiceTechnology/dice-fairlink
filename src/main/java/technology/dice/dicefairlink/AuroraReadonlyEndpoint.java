@@ -7,7 +7,7 @@ package technology.dice.dicefairlink;
 
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
-import technology.dice.dicefairlink.discovery.awsapi.ReplicasFinderFactory;
+import technology.dice.dicefairlink.discovery.ReplicasFinderFactory;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
 import java.net.URI;
