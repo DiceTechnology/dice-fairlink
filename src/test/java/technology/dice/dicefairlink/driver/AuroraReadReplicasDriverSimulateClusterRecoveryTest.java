@@ -18,6 +18,8 @@ import com.amazonaws.services.rds.model.DescribeDBClustersResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
+import com.amazonaws.services.rds.model.ListTagsForResourceRequest;
+import com.amazonaws.services.rds.model.ListTagsForResourceResult;
 import org.easymock.EasyMock;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,6 +31,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
@@ -54,7 +57,8 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     AmazonRDSAsyncClientBuilder.class,
     AuroraReadReplicasDriver.class
   })
-  public void canConnectToValidUrlBasicAuth_whenOnlyMasterIsAvailableThenListOfReplicasChanges() throws Exception {
+  public void canConnectToValidUrlBasicAuth_whenOnlyMasterIsAvailableThenListOfReplicasChanges()
+      throws Exception {
     final String stubInstanceId_A = "123";
     final String stubInstanceId_B = "345";
 
@@ -70,6 +74,7 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     final AmazonRDSAsync mockAmazonRDSAsync = mock(AmazonRDSAsync.class);
     final DescribeDBClustersResult mockDescribeDBClustersResult =
         mock(DescribeDBClustersResult.class);
+    final ListTagsForResourceResult mockListTagsForResult = mock(ListTagsForResourceResult.class);
     final DBCluster mockDbCluster = mock(DBCluster.class);
     final DBClusterMember mockDbClusterMember_A = mock(DBClusterMember.class);
     final DBClusterMember mockDbClusterMember_B = mock(DBClusterMember.class);
@@ -83,7 +88,10 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
 
     PowerMock.mockStatic(DriverManager.class);
     PowerMockito.doNothing().doThrow(Exception.class).when(DriverManager.class);
-    EasyMock.expect(DriverManager.getDriver(VALID_JDBC_CLUSTER_RO_ENDPOINT_URL)).andReturn(mockMySqlDriver); // once driver is decided for the delegated URL type (be it MySQL, PostgreSQL etc) it will not change.
+    EasyMock.expect(DriverManager.getDriver(VALID_JDBC_URL))
+        .andReturn(
+            mockMySqlDriver); // once driver is decided for the delegated URL type (be it MySQL,
+    // PostgreSQL etc) it will not change.
     PowerMock.replay(DriverManager.class);
 
     PowerMockito.mockStatic(AmazonRDSAsyncClient.class);
@@ -100,6 +108,9 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     Mockito.when(mockDescribeDBClustersResult.getDBClusters())
         .thenReturn(Arrays.asList(mockDbCluster));
 
+    Mockito.when(mockAmazonRDSAsync.listTagsForResource(any(ListTagsForResourceRequest.class)))
+        .thenReturn(mockListTagsForResult);
+
     Mockito.when(mockDbCluster.getDBClusterMembers())
         .thenReturn(Collections.emptyList())
         .thenReturn(Collections.emptyList())
@@ -110,7 +121,10 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     Mockito.when(mockDbClusterMember_B.isClusterWriter()).thenReturn(false);
     Mockito.when(mockDbClusterMember_B.getDBInstanceIdentifier()).thenReturn(stubInstanceId_B);
 
-    Mockito.when(mockAmazonRDSAsync.describeDBInstances(Mockito.any(DescribeDBInstancesRequest.class)))
+    Mockito.when(mockListTagsForResult.getTagList()).thenReturn(new ArrayList<>());
+
+    Mockito.when(
+            mockAmazonRDSAsync.describeDBInstances(Mockito.any(DescribeDBInstancesRequest.class)))
         .thenReturn(mockDbInstancesResult_A)
         .thenReturn(mockDbInstancesResult_B);
     Mockito.when(mockDbInstancesResult_A.getDBInstances())
@@ -125,8 +139,7 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
     Mockito.when(mockEndpoint_A.getAddress()).thenReturn(VALID_ENDPOINT_ADDRESS_A);
     Mockito.when(mockEndpoint_B.getAddress()).thenReturn(VALID_ENDPOINT_ADDRESS_B);
 
-    Mockito.when(mockDbCluster.getReaderEndpoint())
-        .thenReturn(VALID_JDBC_CLUSTER_RO_ENDPOINT_URL);
+    Mockito.when(mockDbCluster.getReaderEndpoint()).thenReturn(VALID_JDBC_CLUSTER_RO_ENDPOINT_URL);
 
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     AuroraReadReplicasDriver auroraReadReplicasDriver =
