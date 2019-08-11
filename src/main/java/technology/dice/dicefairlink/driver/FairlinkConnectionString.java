@@ -32,7 +32,7 @@ public class FairlinkConnectionString {
     return delegateProtocol;
   }
 
-  public String delegateConnectionString() throws URISyntaxException {
+  public String delegateConnectionString() {
     return JDBC_PREFIX + ":" + this.delegateUri.toASCIIString();
   }
 
