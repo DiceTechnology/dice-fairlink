@@ -39,8 +39,8 @@ public class FairlinkConnectionString {
   public String delegateConnectionString(String forHost) throws URISyntaxException {
     return new URI(
             JDBC_PREFIX + ":" + delegateUri.getScheme(),
+            delegateUri.getUserInfo(),
             forHost,
-            delegateUri.getHost(),
             delegateUri.getPort(),
             delegateUri.getPath(),
             delegateUri.getQuery(),
