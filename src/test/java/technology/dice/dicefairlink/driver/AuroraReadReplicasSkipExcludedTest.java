@@ -31,8 +31,6 @@ import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.config.ReplicasDiscoveryMode;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -153,7 +151,7 @@ public class AuroraReadReplicasSkipExcludedTest {
     AmazonRDSAsyncClient.class,
     AmazonRDSAsyncClientBuilder.class,
   })
-  public void exclusionTagsObserved() throws URISyntaxException {
+  public void exclusionTagsObserved() {
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     Properties p = new Properties();
     p.setProperty("", "");
@@ -166,7 +164,7 @@ public class AuroraReadReplicasSkipExcludedTest {
             System.getenv());
 
     final AuroraReadonlyEndpoint underTest =
-        new AuroraReadonlyEndpoint(new URI("cluster1"), fairlinkConfiguration, stepByStepExecutor);
+        new AuroraReadonlyEndpoint("cluster1", fairlinkConfiguration, stepByStepExecutor);
 
     Set<String> endpoints = new HashSet<>(3);
     endpoints.add(underTest.getNextReplica());

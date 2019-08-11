@@ -34,6 +34,15 @@ public class AuroraReadReplicasDriverTest {
   }
 
   @Test
+  public void refuses_vanillaJdbc() throws Exception {
+    AuroraReadReplicasDriver auroraReadReplicasDriver =
+        new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
+    boolean retunedValue =
+        auroraReadReplicasDriver.acceptsURL("jdbc:mysql://host:3306/id?useSSL=false");
+    assertThat(retunedValue).isEqualTo(false);
+  }
+
+  @Test
   public void canAcceptsURL_validString() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
         new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));

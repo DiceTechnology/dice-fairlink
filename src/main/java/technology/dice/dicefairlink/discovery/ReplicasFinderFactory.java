@@ -1,18 +1,15 @@
 package technology.dice.dicefairlink.discovery;
 
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.discovery.DiscoveryCallback;
 import technology.dice.dicefairlink.discovery.awsapi.AwsApiReplicasFinder;
-
-import java.net.URI;
 
 public class ReplicasFinderFactory {
   public static AwsApiReplicasFinder getFinder(
-      FairlinkConfiguration configuration, URI url, DiscoveryCallback callback) {
+      FairlinkConfiguration configuration, String host, DiscoveryCallback callback) {
     switch (configuration.getReplicasDiscoveryMode()) {
       case RDS_API:
         return new AwsApiReplicasFinder(
-            url.getHost(),
+            host,
             configuration.getAwsCredentialsProvider(),
             configuration.getAuroraClusterRegion(),
             callback);

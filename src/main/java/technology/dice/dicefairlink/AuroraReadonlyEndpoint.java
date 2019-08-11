@@ -10,7 +10,6 @@ import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
 import technology.dice.dicefairlink.discovery.ReplicasFinderFactory;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
-import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,12 +22,12 @@ public class AuroraReadonlyEndpoint {
   private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
   public AuroraReadonlyEndpoint(
-      URI uri, FairlinkConfiguration fairlinkConfiguration, ScheduledExecutorService executor) {
+      String host, FairlinkConfiguration fairlinkConfiguration, ScheduledExecutorService executor) {
 
     BaseReadReplicasFinder finder =
         ReplicasFinderFactory.getFinder(
             fairlinkConfiguration,
-            uri,
+            host,
             discoveredReplicas -> {
               replicas = discoveredReplicas;
               if (LOGGER.isLoggable(Level.FINE)) {
@@ -36,9 +35,7 @@ public class AuroraReadonlyEndpoint {
                     Level.FINE,
                     String.format(
                         "Retrieved [%s] read replicas for cluster identified by [%s] with. List will be refreshed in [%s]",
-                        replicas.size(),
-                        uri.getHost(),
-                        fairlinkConfiguration.getReplicaPollInterval()));
+                        replicas.size(), host, fairlinkConfiguration.getReplicaPollInterval()));
               }
             });
     replicas = finder.init();
@@ -46,7 +43,7 @@ public class AuroraReadonlyEndpoint {
         Level.INFO,
         String.format(
             "Initialised driver for cluster identified by [%s] with [%s] read replicas. List will be refreshed every [%s]",
-            uri.getHost(), replicas.size(), fairlinkConfiguration.getReplicaPollInterval()));
+            host, replicas.size(), fairlinkConfiguration.getReplicaPollInterval()));
     executor.scheduleAtFixedRate(
         finder,
         fairlinkConfiguration.getReplicaPollInterval().getSeconds(),

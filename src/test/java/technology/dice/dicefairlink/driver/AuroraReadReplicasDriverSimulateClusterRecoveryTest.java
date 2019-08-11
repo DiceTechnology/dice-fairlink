@@ -44,6 +44,8 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
 
   private static final String VALID_JDBC_URL =
       "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
+  private static final String DELEGATE_URL =
+      "jdbc:mysql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_JDBC_CLUSTER_RO_ENDPOINT_URL =
       "jdbc:mysql://aa-ro:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_ENDPOINT_ADDRESS_A = "replica-1-ro";
@@ -88,7 +90,7 @@ public class AuroraReadReplicasDriverSimulateClusterRecoveryTest {
 
     PowerMock.mockStatic(DriverManager.class);
     PowerMockito.doNothing().doThrow(Exception.class).when(DriverManager.class);
-    EasyMock.expect(DriverManager.getDriver(VALID_JDBC_URL))
+    EasyMock.expect(DriverManager.getDriver(DELEGATE_URL))
         .andReturn(
             mockMySqlDriver); // once driver is decided for the delegated URL type (be it MySQL,
     // PostgreSQL etc) it will not change.

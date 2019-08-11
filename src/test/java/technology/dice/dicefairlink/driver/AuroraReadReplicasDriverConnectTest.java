@@ -44,8 +44,8 @@ public class AuroraReadReplicasDriverConnectTest {
       new ListTagsForResourceResult().withTagList();
   private static final String VALID_JDBC_URL =
       "jdbc:auroraro:postresql://aa:123/db?param1=123&param2=true&param3=abc";
-  private static final String VALID_LOW_JDBC_URL =
-      "jdbc:postresql://replica-1-ro:123/db?param1=123&param2=true&param3=abc";
+  private static final String DELEGATE_JDBC_URL =
+      "jdbc:postresql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_ENDPOINT_ADDRESS = "replica-1-ro";
 
   @Test
@@ -80,7 +80,7 @@ public class AuroraReadReplicasDriverConnectTest {
 
     PowerMock.mockStatic(DriverManager.class);
     PowerMockito.doNothing().doThrow(Exception.class).when(DriverManager.class);
-    EasyMock.expect(DriverManager.getDriver(VALID_LOW_JDBC_URL)).andReturn(mockDriver);
+    EasyMock.expect(DriverManager.getDriver(DELEGATE_JDBC_URL)).andReturn(mockDriver);
     PowerMock.replay(DriverManager.class);
 
     PowerMockito.mockStatic(AmazonRDSAsyncClient.class);

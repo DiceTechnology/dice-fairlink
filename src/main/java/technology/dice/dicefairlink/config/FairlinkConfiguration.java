@@ -25,6 +25,7 @@ public class FairlinkConfiguration {
   public static final String DISCOVERY_MODE_PROPERTY_NAME = "discoveryMode";
   public static final String CLUSTER_REGION = "auroraClusterRegion";
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
+  private static final String MYSQL = "mysql";
   private final Optional<Region> auroraClusterRegion;
   private final AWSCredentialsProvider awsCredentialsProvider;
   private final Duration replicaPollInterval;
@@ -181,5 +182,13 @@ public class FairlinkConfiguration {
 
   public ReplicasDiscoveryMode getReplicasDiscoveryMode() {
     return replicasDiscoveryMode;
+  }
+
+  public boolean isValidForDelegateProtocol(String delegateProtocol) {
+    if (this.getReplicasDiscoveryMode() == ReplicasDiscoveryMode.SQL
+        && !delegateProtocol.equalsIgnoreCase(MYSQL)) {
+      return false;
+    }
+    return true;
   }
 }

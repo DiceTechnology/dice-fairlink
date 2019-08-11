@@ -10,7 +10,6 @@ import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import technology.dice.dicefairlink.ParsedUrl;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -27,17 +26,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class AuroraReadReplicasDriver implements Driver {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadReplicasDriver.class.getName());
-  private static final String DRIVER_PROTOCOL = "auroraro";
-  private static final Pattern driverPattern =
-      Pattern.compile("jdbc:" + DRIVER_PROTOCOL + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
-  private static final String JDBC_PREFIX = "jdbc";
   private final Map<String, Driver> delegates = new HashMap<>();
-  private final Map<URI, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
+  private final Map<String, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
 
   private final Supplier<ScheduledExecutorService> executorSupplier;
 
@@ -64,7 +57,12 @@ public class AuroraReadReplicasDriver implements Driver {
     if (url == null) {
       throw new SQLException("Url must not be null");
     }
-    final boolean matches = driverPattern.matcher(url).matches();
+    boolean matches = true;
+    try {
+      new FairlinkConnectionString(url);
+    } catch (Exception x) {
+      matches = false;
+    }
     LOGGER.info(String.format("Accepting URL: [%s] : %s", url, matches));
     return matches;
   }
@@ -120,57 +118,55 @@ public class AuroraReadReplicasDriver implements Driver {
   private Optional<ParsedUrl> parseUrlAndCacheDriver(final String url, final Properties properties)
       throws SQLException, URISyntaxException {
     LOGGER.log(Level.FINE, "URI: {0}", url);
-    Matcher matcher = driverPattern.matcher(url);
-    if (!matcher.matches()) {
+    FairlinkConnectionString fairlinkConnectionString;
+    try {
+      fairlinkConnectionString = new FairlinkConnectionString(url);
+    } catch (IllegalArgumentException ex) {
       LOGGER.log(Level.INFO, "URI not supported [{0}]. Returning empty.", url);
       return Optional.empty();
     }
-    String delegate = matcher.group("delegate");
-    LOGGER.log(Level.FINE, "Delegate driver: {0}", delegate);
-    final String clusterURI = DRIVER_PROTOCOL + ":" + matcher.group("uri");
+
+    LOGGER.log(Level.FINE, "Delegate driver: {0}", fairlinkConnectionString.getDelegateProtocol());
     try {
       FairlinkConfiguration fairlinkConfiguration =
           new FairlinkConfiguration(properties, System.getenv());
-      URI uri = new URI(clusterURI);
-      LOGGER.log(Level.FINE, "Driver URI: {0}", uri);
+
+      LOGGER.log(Level.FINE, "Driver URI: {0}", fairlinkConnectionString.getFairlinkUri());
       final Region region = fairlinkConfiguration.getAuroraClusterRegion();
       LOGGER.log(Level.FINE, "Region: {0}", region);
 
-      if (!this.auroraClusters.containsKey(uri)) {
+      if (!this.auroraClusters.containsKey(fairlinkConnectionString.getFairlinkUri())) {
         // because AWS credentials, region and poll interval properties
         // are only processed once per uri, the driver does not support dynamically changing them
         final AuroraReadonlyEndpoint roEndpoint =
-            new AuroraReadonlyEndpoint(uri, fairlinkConfiguration, executorSupplier.get());
+            new AuroraReadonlyEndpoint(
+                fairlinkConnectionString.getHost(), fairlinkConfiguration, executorSupplier.get());
 
-        LOGGER.log(Level.FINE, "RO url: {0}", uri.getHost());
-        this.auroraClusters.put(uri, roEndpoint);
+        LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
+        this.auroraClusters.put(fairlinkConnectionString.getFairlinkUri(), roEndpoint);
       }
 
-      final String nextReplica = auroraClusters.get(uri).getNextReplica();
+      this.addDriverForDelegate(
+          fairlinkConnectionString.getDelegateProtocol(),
+          fairlinkConnectionString.delegateConnectionString());
+      final String nextReplica =
+          auroraClusters.get(fairlinkConnectionString.getFairlinkUri()).getNextReplica();
       LOGGER.fine(
           String.format(
               "Obtained [%s] for the next replica to use for cluster [%s]",
-              nextReplica, uri.getHost()));
-      final String prefix = String.format("%s:%s", JDBC_PREFIX, delegate);
+              nextReplica, fairlinkConnectionString.getHost()));
       final String delegatedReplicaUri =
-          (nextReplica.startsWith(prefix))
-              ? nextReplica
-              : new URI(
-                      prefix,
-                      uri.getUserInfo(),
-                      nextReplica,
-                      uri.getPort(),
-                      uri.getPath(),
-                      uri.getQuery(),
-                      uri.getFragment())
-                  .toASCIIString();
+          fairlinkConnectionString.delegateConnectionString(nextReplica);
+
       LOGGER.log(Level.FINE, "URI to connect to: {0}", delegatedReplicaUri);
 
-      addDriverForDelegate(delegate, delegatedReplicaUri);
-
-      return Optional.of(new ParsedUrl(delegate, delegatedReplicaUri));
+      return Optional.of(
+          new ParsedUrl(fairlinkConnectionString.getDelegateProtocol(), delegatedReplicaUri));
     } catch (URISyntaxException | NoSuchElementException e) {
-      LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + clusterURI, e);
+      LOGGER.log(
+          Level.SEVERE,
+          "Can not get replicas for cluster URI: " + fairlinkConnectionString.getFairlinkUri(),
+          e);
       return Optional.empty();
     }
   }
