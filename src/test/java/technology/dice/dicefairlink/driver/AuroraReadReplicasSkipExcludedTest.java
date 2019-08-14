@@ -1,9 +1,6 @@
 package technology.dice.dicefairlink.driver;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.rds.AmazonRDSAsync;
 import com.amazonaws.services.rds.AmazonRDSAsyncClient;
@@ -29,9 +26,9 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.config.ReplicasDiscoveryMode;
 
-import java.time.Duration;
+import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Properties;
@@ -151,20 +148,20 @@ public class AuroraReadReplicasSkipExcludedTest {
     AmazonRDSAsyncClient.class,
     AmazonRDSAsyncClientBuilder.class,
   })
-  public void exclusionTagsObserved() {
+  public void exclusionTagsObserved() throws URISyntaxException, SQLException {
     final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
     Properties p = new Properties();
-    p.setProperty("", "");
-    FairlinkConfiguration fairlinkConfiguration =
-        new FairlinkConfiguration(
-            Region.getRegion(Regions.AP_NORTHEAST_1),
-            new AWSStaticCredentialsProvider(new BasicAWSCredentials("key", "secret")),
-            Duration.ofSeconds(10),
-            ReplicasDiscoveryMode.RDS_API,
-            System.getenv());
+    p.setProperty("auroraClusterRegion", Regions.AP_NORTHEAST_1.getName());
+    p.setProperty("auroraDiscoveryAuthMode", "basic");
+    p.setProperty("auroraDiscoveryKeyId", "key");
+    p.setProperty("auroraDiscoverKeySecret", "secret");
+    FairlinkConfiguration fairlinkConfiguration = new FairlinkConfiguration(p, System.getenv());
 
     final AuroraReadonlyEndpoint underTest =
-        new AuroraReadonlyEndpoint("cluster1", fairlinkConfiguration, stepByStepExecutor);
+        new AuroraReadonlyEndpoint(
+            new FairlinkConnectionString("jdbc:auroraro:mysql://cluster1", p),
+            fairlinkConfiguration,
+            stepByStepExecutor);
 
     Set<String> endpoints = new HashSet<>(3);
     endpoints.add(underTest.getNextReplica());

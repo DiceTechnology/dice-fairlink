@@ -43,9 +43,9 @@ public class AuroraReadReplicasDriverConnectTest {
   private static final ListTagsForResourceResult EMPTY_TAG_RESULT =
       new ListTagsForResourceResult().withTagList();
   private static final String VALID_JDBC_URL =
-      "jdbc:auroraro:postresql://aa:123/db?param1=123&param2=true&param3=abc";
+      "jdbc:auroraro:postgresql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String DELEGATE_JDBC_URL =
-      "jdbc:postresql://aa:123/db?param1=123&param2=true&param3=abc";
+      "jdbc:postgresql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String VALID_ENDPOINT_ADDRESS = "replica-1-ro";
 
   @Test

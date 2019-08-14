@@ -5,7 +5,7 @@ import java.util.Optional;
 
 public enum ReplicasDiscoveryMode {
   RDS_API,
-  SQL;
+  SQL_MYSQL;
 
   public static Optional<ReplicasDiscoveryMode> fromStringInsensitive(String candidate) {
     return Arrays.stream(ReplicasDiscoveryMode.values())

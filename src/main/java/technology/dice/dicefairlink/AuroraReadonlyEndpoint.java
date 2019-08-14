@@ -8,8 +8,10 @@ package technology.dice.dicefairlink;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
 import technology.dice.dicefairlink.discovery.ReplicasFinderFactory;
+import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
+import java.sql.SQLException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,12 +24,15 @@ public class AuroraReadonlyEndpoint {
   private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
   public AuroraReadonlyEndpoint(
-      String host, FairlinkConfiguration fairlinkConfiguration, ScheduledExecutorService executor) {
+      FairlinkConnectionString fairlinkConnectionString,
+      FairlinkConfiguration fairlinkConfiguration,
+      ScheduledExecutorService executor)
+      throws SQLException {
 
     BaseReadReplicasFinder finder =
         ReplicasFinderFactory.getFinder(
             fairlinkConfiguration,
-            host,
+            fairlinkConnectionString,
             discoveredReplicas -> {
               replicas = discoveredReplicas;
               if (LOGGER.isLoggable(Level.FINE)) {
@@ -35,7 +40,9 @@ public class AuroraReadonlyEndpoint {
                     Level.FINE,
                     String.format(
                         "Retrieved [%s] read replicas for cluster identified by [%s] with. List will be refreshed in [%s]",
-                        replicas.size(), host, fairlinkConfiguration.getReplicaPollInterval()));
+                        replicas.size(),
+                        fairlinkConnectionString.getHost(),
+                        fairlinkConfiguration.getReplicaPollInterval()));
               }
             });
     replicas = finder.init();
@@ -43,7 +50,9 @@ public class AuroraReadonlyEndpoint {
         Level.INFO,
         String.format(
             "Initialised driver for cluster identified by [%s] with [%s] read replicas. List will be refreshed every [%s]",
-            host, replicas.size(), fairlinkConfiguration.getReplicaPollInterval()));
+            fairlinkConnectionString.getHost(),
+            replicas.size(),
+            fairlinkConfiguration.getReplicaPollInterval()));
     executor.scheduleAtFixedRate(
         finder,
         fairlinkConfiguration.getReplicaPollInterval().getSeconds(),
@@ -53,6 +62,7 @@ public class AuroraReadonlyEndpoint {
 
   public String getNextReplica() {
     String nextReplica = replicas.next();
+    System.out.println(nextReplica);
     if (nextReplica != null && nextReplica.equals(lastReplica.get())) {
       nextReplica = replicas.next();
     }

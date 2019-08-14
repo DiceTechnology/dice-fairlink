@@ -5,8 +5,6 @@
  */
 package technology.dice.dicefairlink.discovery.awsapi;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.regions.Region;
 import com.amazonaws.services.rds.AmazonRDSAsync;
 import com.amazonaws.services.rds.AmazonRDSAsyncClient;
 import com.amazonaws.services.rds.model.DBCluster;
@@ -19,11 +17,13 @@ import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Endpoint;
 import com.amazonaws.services.rds.model.ListTagsForResourceRequest;
 import com.amazonaws.services.rds.model.ListTagsForResourceResult;
+import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
 import technology.dice.dicefairlink.discovery.ClusterInfo;
 import technology.dice.dicefairlink.discovery.DiscoveryCallback;
-import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
+import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,18 +39,18 @@ public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
   private final AmazonRDSAsync client;
 
   public AwsApiReplicasFinder(
-      String hostname,
-      AWSCredentialsProvider credentialsProvider,
-      Region region,
-      DiscoveryCallback callback) {
-    super(callback);
-    this.clusterId = hostname;
-    LOGGER.log(Level.INFO, "Cluster ID: {0}", hostname);
-    LOGGER.log(Level.INFO, "AWS Region: {0}", region);
+      FairlinkConfiguration fairlinkConfiguration,
+      FairlinkConnectionString fairlinkConnectionString,
+      DiscoveryCallback callback)
+      throws SQLException {
+    super(fairlinkConfiguration, fairlinkConnectionString, callback);
+    this.clusterId = fairlinkConnectionString.getHost();
+    LOGGER.log(Level.INFO, "Cluster ID: {0}", fairlinkConnectionString.getHost());
+    LOGGER.log(Level.INFO, "AWS Region: {0}", fairlinkConfiguration.getAuroraClusterRegion());
     this.client =
         AmazonRDSAsyncClient.asyncBuilder()
-            .withRegion(region.getName())
-            .withCredentials(credentialsProvider)
+            .withRegion(fairlinkConfiguration.getAuroraClusterRegion().getName())
+            .withCredentials(fairlinkConfiguration.getAwsCredentialsProvider())
             .build();
   }
 
@@ -69,10 +69,9 @@ public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
           String.format("Could not find exactly one cluster with cluster id [%s]", this.clusterId));
     }
     DBCluster cluster = dbClusterOptional.get();
-    fallbackReadOnlyEndpoint = cluster.getReaderEndpoint();
     List<String> readerUrls = replicaMembersOf(cluster);
 
-    return new ClusterInfo(fallbackReadOnlyEndpoint, readerUrls);
+    return new ClusterInfo(cluster.getReaderEndpoint(), readerUrls);
   }
 
   private List<String> replicaMembersOf(DBCluster cluster) {
@@ -168,39 +167,5 @@ public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
       }
     }
     return urls;
-  }
-
-  @Override
-  public RandomisedCyclicIterator<String> discoverReplicas() {
-    try {
-      Optional<DBCluster> dbClusterOptional = this.describeCluster();
-      if (!dbClusterOptional.isPresent()) {
-        LOGGER.log(
-            Level.WARNING,
-            String.format(
-                "Could not retrieve cluster information for cluster [%s]. Will fallback to [%s] until individual members can be retrieved again",
-                clusterId, fallbackReadOnlyEndpoint));
-        return RandomisedCyclicIterator.of(fallbackReadOnlyEndpoint);
-      }
-      List<String> readerUrls =
-          dbClusterOptional.map(cluster -> replicaMembersOf(cluster)).orElse(new ArrayList<>(0));
-      if (readerUrls.isEmpty()) {
-        LOGGER.log(
-            Level.WARNING,
-            "No read replicas found for cluster [{0}]. Will fallback to [{1}] until individual members can be retrieved again",
-            new Object[] {clusterId, fallbackReadOnlyEndpoint});
-        return RandomisedCyclicIterator.of(fallbackReadOnlyEndpoint);
-      }
-
-      return RandomisedCyclicIterator.of(readerUrls);
-    } catch (Exception e) {
-      LOGGER.log(
-          Level.SEVERE,
-          String.format(
-              "Exception while refreshing list of read replicas from cluster [%s]. Falling back to [%s]",
-              clusterId, fallbackReadOnlyEndpoint),
-          e);
-      return RandomisedCyclicIterator.of(fallbackReadOnlyEndpoint);
-    }
   }
 }

@@ -2,6 +2,7 @@ package technology.dice.dicefairlink.driver;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,18 +14,19 @@ public class FairlinkConnectionString {
   private final String delegateProtocol;
   private final String fairlinKUri;
   private final URI delegateUri;
-  private final String prefix;
+  private final Properties properties;
 
-  public FairlinkConnectionString(String connectionString) throws URISyntaxException {
+  public FairlinkConnectionString(String connectionString, Properties properties)
+      throws URISyntaxException {
     this.fairlinKUri = connectionString;
+    this.properties = properties;
 
     Matcher matcher = driverPattern.matcher(connectionString);
     if (!matcher.matches()) {
       throw new IllegalArgumentException(
-          connectionString + "is not a valid fairlink connection string");
+          connectionString + " is not a valid fairlink connection string");
     }
     this.delegateProtocol = matcher.group("delegate");
-    this.prefix = String.format("%s:%s", JDBC_PREFIX, delegateProtocol);
     this.delegateUri = new URI(this.delegateProtocol + ":" + matcher.group("uri"));
   }
 
@@ -54,5 +56,14 @@ public class FairlinkConnectionString {
 
   public String getFairlinkUri() {
     return this.fairlinKUri;
+  }
+
+  public Properties getProperties() {
+    return properties;
+  }
+
+  public static boolean accepts(String url) {
+    Matcher matcher = driverPattern.matcher(url);
+    return matcher.matches();
   }
 }

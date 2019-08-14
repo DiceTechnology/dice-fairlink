@@ -22,33 +22,19 @@ public class FairlinkConfiguration {
   public static final String AWS_BASIC_CREDENTIALS_KEY = "auroraDiscoveryKeyId";
   public static final String AWS_BASIC_CREDENTIALS_SECRET = "auroraDiscoverKeySecret";
   public static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
+  public static final String REPLICA_ENDPOINT_TEMPLATE = "replicaEndpointTemplate";
   public static final String DISCOVERY_MODE_PROPERTY_NAME = "discoveryMode";
+  public static final String VALIDATE_CONNECTION = "validateConnection";
   public static final String CLUSTER_REGION = "auroraClusterRegion";
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private static final String MYSQL = "mysql";
   private final Optional<Region> auroraClusterRegion;
+  private final Optional<String> replicaEndpointTemplate;
   private final AWSCredentialsProvider awsCredentialsProvider;
   private final Duration replicaPollInterval;
   private final ReplicasDiscoveryMode replicasDiscoveryMode;
   private final Map<String, String> env;
-
-  public FairlinkConfiguration(
-      Region auroraClusterRegion,
-      AWSCredentialsProvider awsCredentialsProvider,
-      Duration replicaPollInterval,
-      ReplicasDiscoveryMode replicasDiscoveryMode,
-      Map<String, String> env) {
-    this.env = env;
-    this.auroraClusterRegion = Optional.of(auroraClusterRegion);
-    this.awsCredentialsProvider = awsCredentialsProvider;
-    this.replicaPollInterval = replicaPollInterval;
-    this.replicasDiscoveryMode = replicasDiscoveryMode;
-    this.validateConfiguration();
-  }
-
-  public FairlinkConfiguration(Properties properties) {
-    this(properties, System.getenv());
-  }
+  private final boolean validateConnection;
 
   public FairlinkConfiguration(Properties properties, Map<String, String> env) {
     this.env = env;
@@ -56,7 +42,18 @@ public class FairlinkConfiguration {
     this.awsCredentialsProvider = this.awsAuth(properties);
     this.replicaPollInterval = this.resolvePollerInterval(properties);
     this.replicasDiscoveryMode = this.resolveDiscoveryMode(properties);
+    this.replicaEndpointTemplate = this.resolveReplicaEndpointTemplate(properties);
+    this.validateConnection = this.resolveValidationConnection(properties);
     this.validateConfiguration();
+  }
+
+  private Optional<String> resolveReplicaEndpointTemplate(Properties properties) {
+    return Optional.ofNullable(properties.getProperty(REPLICA_ENDPOINT_TEMPLATE));
+  }
+
+  private boolean resolveValidationConnection(Properties properties) {
+    return Optional.ofNullable(Boolean.parseBoolean(properties.getProperty(VALIDATE_CONNECTION)))
+        .orElse(Boolean.FALSE);
   }
 
   private void validateConfiguration() {
@@ -67,7 +64,12 @@ public class FairlinkConfiguration {
     }
   }
 
-  private void validateSqlDiscovery() {}
+  private void validateSqlDiscovery() {
+    this.replicaEndpointTemplate.orElseThrow(
+        () ->
+            new IllegalStateException(
+                "Replica endpoint template mandatory for all SQL discovery modes"));
+  }
 
   private void validateAwsApiDiscovery() {
     this.auroraClusterRegion.orElseThrow(
@@ -180,12 +182,20 @@ public class FairlinkConfiguration {
     return auroraClusterRegion.get();
   }
 
+  public String getReplicaEndpointTemplate() {
+    return replicaEndpointTemplate.get();
+  }
+
+  public boolean isValidateConnection() {
+    return validateConnection;
+  }
+
   public ReplicasDiscoveryMode getReplicasDiscoveryMode() {
     return replicasDiscoveryMode;
   }
 
-  public boolean isValidForDelegateProtocol(String delegateProtocol) {
-    if (this.getReplicasDiscoveryMode() == ReplicasDiscoveryMode.SQL
+  public boolean isDiscoveryModeValidForDelegate(String delegateProtocol) {
+    if (this.getReplicasDiscoveryMode() == ReplicasDiscoveryMode.SQL_MYSQL
         && !delegateProtocol.equalsIgnoreCase(MYSQL)) {
       return false;
     }
