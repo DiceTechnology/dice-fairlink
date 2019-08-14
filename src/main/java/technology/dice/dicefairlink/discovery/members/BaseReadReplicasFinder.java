@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -47,12 +48,14 @@ public abstract class BaseReadReplicasFinder implements Runnable {
     this.tagFilter = ExclusionTagFinderFactory.getTagFilter(fairlinkConfiguration);
     this.driverForDelegate =
         DriverManager.getDriver(fairlinkConnectionString.delegateConnectionString());
+    final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
+    LOGGER.info("Starting excluded members discovery with " + startJitter + " delay.");
     tagsPollingExecutor.scheduleAtFixedRate(
         () ->
             excludedInstanceIds =
                 tagFilter.listExcludedInstances(
                     new ExclusionTag(EXCLUSION_TAG_KEY, Boolean.TRUE.toString())),
-        1,
+        startJitter.getSeconds(),
         fairlinkConfiguration.getTagsPollerInterval().getSeconds(),
         TimeUnit.SECONDS);
   }
@@ -81,9 +84,11 @@ public abstract class BaseReadReplicasFinder implements Runnable {
             + (after - before)
             + " ms. Found "
             + filteredReplicas.size()
-            + " good, active replicas (validation "
-            + (fairlinkConfiguration.isValidateConnection() ? "" : "NOT " + "done)")
-            + ". Next update in "
+            + " good, active replica"
+            + (filteredReplicas.size() != 1 ? "s" : "")
+            + " (validation "
+            + (fairlinkConfiguration.isValidateConnection() ? "" : "NOT ")
+            + "done). Next update in "
             + this.fairlinkConfiguration.getReplicaPollInterval());
     return result;
   }

@@ -11,11 +11,13 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FairlinkConfiguration {
   private static final Logger LOGGER = Logger.getLogger(FairlinkConfiguration.class.getName());
+  private static final int MAX_START_DELAY = 10;
   public static final String AWS_AUTH_MODE_PROPERTY_NAME = "auroraDiscoveryAuthMode";
   public static final String AWS_BASIC_CREDENTIALS_KEY = "auroraDiscoveryKeyId";
   public static final String AWS_BASIC_CREDENTIALS_SECRET = "auroraDiscoverKeySecret";
@@ -41,7 +43,7 @@ public class FairlinkConfiguration {
     this.env = env;
     this.auroraClusterRegion = this.resolveRegion(properties);
     this.awsCredentialsProvider = this.awsAuth(properties);
-    this.tagsPollerInterval = this.resolveTagPollerINterval(properties);
+    this.tagsPollerInterval = this.resolveTagPollerInterval(properties);
     this.replicaPollInterval = this.resolvePollerInterval(properties);
     this.replicasDiscoveryMode = this.resolveDiscoveryMode(properties);
     this.replicaEndpointTemplate = this.resolveReplicaEndpointTemplate(properties);
@@ -142,7 +144,7 @@ public class FairlinkConfiguration {
     }
   }
 
-  private Duration resolveTagPollerINterval(Properties properties) {
+  private Duration resolveTagPollerInterval(Properties properties) {
     try {
       return Duration.ofSeconds(
           Integer.parseInt(properties.getProperty(TAGS_INTERVAL_PROPERTY_NAME)));
@@ -153,6 +155,11 @@ public class FairlinkConfiguration {
               DEFAULT_TAG_POLL_INTERVAL));
       return DEFAULT_POLLER_INTERVAL;
     }
+  }
+
+  public Duration randomBoundDelay() {
+    return Duration.ofMillis(
+        new Float(ThreadLocalRandom.current().nextFloat() * MAX_START_DELAY * 1000).longValue());
   }
 
   public Duration getReplicaPollInterval() {

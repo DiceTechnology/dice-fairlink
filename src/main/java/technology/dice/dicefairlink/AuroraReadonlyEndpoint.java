@@ -12,6 +12,7 @@ import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,16 +56,17 @@ public class AuroraReadonlyEndpoint {
             fairlinkConnectionString.getHost(),
             replicas.size(),
             fairlinkConfiguration.getReplicaPollInterval()));
+    final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
+    LOGGER.info("Starting cluster member discovery with " + startJitter + " delay.");
     replicaDiscoveryExecutor.scheduleAtFixedRate(
         finder,
-        fairlinkConfiguration.getReplicaPollInterval().getSeconds(),
+        fairlinkConfiguration.getReplicaPollInterval().plus(startJitter).getSeconds(),
         fairlinkConfiguration.getReplicaPollInterval().getSeconds(),
         TimeUnit.SECONDS);
   }
 
   public String getNextReplica() {
     String nextReplica = replicas.next();
-    System.out.println(nextReplica);
     if (nextReplica != null && nextReplica.equals(lastReplica.get())) {
       nextReplica = replicas.next();
     }

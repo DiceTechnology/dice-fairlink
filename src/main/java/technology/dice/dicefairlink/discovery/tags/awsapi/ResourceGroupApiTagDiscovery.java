@@ -48,13 +48,22 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
                       .build())
               .build();
       final GetResourcesIterable resourcesPaginator = client.getResourcesPaginator(request);
-      return resourcesPaginator.stream()
-          .flatMap(
-              p ->
-                  p.resourceTagMappingList().stream()
-                      .map(e -> e.resourceARN().substring(e.resourceARN().lastIndexOf(":") + 1)))
-          .map(id -> String.format(this.replicaEndpointTemplate, id))
-          .collect(Collectors.toSet());
+      final Set<String> excludedDbInstances =
+          resourcesPaginator.stream()
+              .flatMap(
+                  p ->
+                      p.resourceTagMappingList().stream()
+                          .map(
+                              e -> e.resourceARN().substring(e.resourceARN().lastIndexOf(":") + 1)))
+              .map(id -> String.format(this.replicaEndpointTemplate, id))
+              .collect(Collectors.toSet());
+      LOGGER.info(
+          "Found "
+              + excludedDbInstances.size()
+              + " excluded replica"
+              + (excludedDbInstances.size() != 1 ? "s" : "")
+              + " in the account, across all clusters");
+      return excludedDbInstances;
     } catch (Exception e) {
       LOGGER.log(
           Level.SEVERE,
