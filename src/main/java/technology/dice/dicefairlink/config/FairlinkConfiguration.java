@@ -1,13 +1,11 @@
 package technology.dice.dicefairlink.config;
 
-import com.amazonaws.SDKGlobalConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import java.time.Duration;
 import java.util.Map;
@@ -22,24 +20,28 @@ public class FairlinkConfiguration {
   public static final String AWS_BASIC_CREDENTIALS_KEY = "auroraDiscoveryKeyId";
   public static final String AWS_BASIC_CREDENTIALS_SECRET = "auroraDiscoverKeySecret";
   public static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
+  public static final String TAGS_INTERVAL_PROPERTY_NAME = "tagsPollInterval";
   public static final String REPLICA_ENDPOINT_TEMPLATE = "replicaEndpointTemplate";
   public static final String DISCOVERY_MODE_PROPERTY_NAME = "discoveryMode";
   public static final String VALIDATE_CONNECTION = "validateConnection";
   public static final String CLUSTER_REGION = "auroraClusterRegion";
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
+  private static final Duration DEFAULT_TAG_POLL_INTERVAL = Duration.ofMinutes(2);
   private static final String MYSQL = "mysql";
   private final Optional<Region> auroraClusterRegion;
   private final Optional<String> replicaEndpointTemplate;
-  private final AWSCredentialsProvider awsCredentialsProvider;
+  private final AwsCredentialsProvider awsCredentialsProvider;
   private final Duration replicaPollInterval;
   private final ReplicasDiscoveryMode replicasDiscoveryMode;
   private final Map<String, String> env;
   private final boolean validateConnection;
+  private final Duration tagsPollerInterval;
 
   public FairlinkConfiguration(Properties properties, Map<String, String> env) {
     this.env = env;
     this.auroraClusterRegion = this.resolveRegion(properties);
     this.awsCredentialsProvider = this.awsAuth(properties);
+    this.tagsPollerInterval = this.resolveTagPollerINterval(properties);
     this.replicaPollInterval = this.resolvePollerInterval(properties);
     this.replicasDiscoveryMode = this.resolveDiscoveryMode(properties);
     this.replicaEndpointTemplate = this.resolveReplicaEndpointTemplate(properties);
@@ -62,14 +64,17 @@ public class FairlinkConfiguration {
     } else {
       this.validateSqlDiscovery();
     }
-  }
 
-  private void validateSqlDiscovery() {
     this.replicaEndpointTemplate.orElseThrow(
         () ->
             new IllegalStateException(
-                "Replica endpoint template mandatory for all SQL discovery modes"));
+                "Replica endpoint template mandatory. It is used for tag exclusion discovery and if an SQL discovery mode is selected"));
+
+    this.auroraClusterRegion.orElseThrow(
+        () -> new IllegalStateException("Region is mandatory for exclusion tag discovery"));
   }
+
+  private void validateSqlDiscovery() {}
 
   private void validateAwsApiDiscovery() {
     this.auroraClusterRegion.orElseThrow(
@@ -83,7 +88,7 @@ public class FairlinkConfiguration {
         .orElse(ReplicasDiscoveryMode.RDS_API);
   }
 
-  private AWSCredentialsProvider awsAuth(Properties properties) {
+  private AwsCredentialsProvider awsAuth(Properties properties) {
     AwsApiDiscoveryAuthMode authMode =
         AwsApiDiscoveryAuthMode.fromStringInsensitive(
                 properties.getProperty(
@@ -100,15 +105,12 @@ public class FairlinkConfiguration {
                   "For basic authentication both [%s] and [%s] must both be set",
                   AWS_BASIC_CREDENTIALS_KEY, AWS_BASIC_CREDENTIALS_SECRET));
         }
-        return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
+        return StaticCredentialsProvider.create(AwsBasicCredentials.create(key, secret));
       case ENVIRONMENT:
-        if (LOGGER.isLoggable(Level.FINE)) {
-          logAwsAccessKeys();
-        }
-        return new EnvironmentVariableCredentialsProvider();
+        return EnvironmentVariableCredentialsProvider.create();
       default:
         // DEFAULT_CHAIN
-        return DefaultAWSCredentialsProviderChain.getInstance();
+        return DefaultCredentialsProvider.create();
     }
   }
 
@@ -116,45 +118,15 @@ public class FairlinkConfiguration {
     final String propertyRegion = properties.getProperty(CLUSTER_REGION);
     LOGGER.log(Level.FINE, "Region from property: {0}", propertyRegion);
     if (propertyRegion != null) {
-      return Optional.of(RegionUtils.getRegion(propertyRegion));
+      return Optional.of(Region.of(propertyRegion));
     }
 
     final String envRegion = this.env.get("AWS_DEFAULT_REGION");
     LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
     if (envRegion != null) {
-      return Optional.of(RegionUtils.getRegion(envRegion));
+      return Optional.of(Region.of(envRegion));
     }
     return Optional.empty();
-  }
-
-  private void logAwsAccessKeys() {
-    final String accessKey =
-        getDualEnvironmentVariable(
-            SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR,
-            SDKGlobalConfiguration.ALTERNATE_ACCESS_KEY_ENV_VAR);
-    final String secretKey =
-        getDualEnvironmentVariable(
-            SDKGlobalConfiguration.SECRET_KEY_ENV_VAR,
-            SDKGlobalConfiguration.ALTERNATE_SECRET_KEY_ENV_VAR);
-    LOGGER.log(
-        Level.FINE,
-        String.format(
-            "accessKey: %s**",
-            accessKey != null && accessKey.length() > 4 ? accessKey.substring(0, 3) : ""));
-    LOGGER.log(
-        Level.FINE,
-        String.format(
-            "secretKey: %s**",
-            secretKey != null && secretKey.length() > 4 ? secretKey.substring(0, 3) : ""));
-  }
-
-  private String getDualEnvironmentVariable(
-      final String primaryVarName, final String secondaryVarName) {
-    final String primaryVal = this.env.get(primaryVarName);
-    if (primaryVal == null) {
-      return this.env.get(secondaryVarName);
-    }
-    return primaryVal;
   }
 
   private Duration resolvePollerInterval(Properties properties) {
@@ -170,11 +142,28 @@ public class FairlinkConfiguration {
     }
   }
 
+  private Duration resolveTagPollerINterval(Properties properties) {
+    try {
+      return Duration.ofSeconds(
+          Integer.parseInt(properties.getProperty(TAGS_INTERVAL_PROPERTY_NAME)));
+    } catch (IllegalArgumentException | NullPointerException e) {
+      LOGGER.warning(
+          String.format(
+              "No or invalid tags polling interval specified. Using default tags poll interval of %s",
+              DEFAULT_TAG_POLL_INTERVAL));
+      return DEFAULT_POLLER_INTERVAL;
+    }
+  }
+
   public Duration getReplicaPollInterval() {
     return replicaPollInterval;
   }
 
-  public AWSCredentialsProvider getAwsCredentialsProvider() {
+  public Duration getTagsPollerInterval() {
+    return tagsPollerInterval;
+  }
+
+  public AwsCredentialsProvider getAwsCredentialsProvider() {
     return awsCredentialsProvider;
   }
 

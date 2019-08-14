@@ -1,9 +1,9 @@
-package technology.dice.dicefairlink.discovery.sql;
+package technology.dice.dicefairlink.discovery.members.sql;
 
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
-import technology.dice.dicefairlink.discovery.ClusterInfo;
-import technology.dice.dicefairlink.discovery.DiscoveryCallback;
+import technology.dice.dicefairlink.discovery.members.BaseReadReplicasFinder;
+import technology.dice.dicefairlink.discovery.members.ClusterInfo;
+import technology.dice.dicefairlink.discovery.members.ReplicasDiscoveryCallback;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
 import java.sql.Connection;
@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 public class SqlReplicasFinder extends BaseReadReplicasFinder {
@@ -24,9 +25,10 @@ public class SqlReplicasFinder extends BaseReadReplicasFinder {
   public SqlReplicasFinder(
       FairlinkConfiguration fairlinkConfiguration,
       FairlinkConnectionString fairlinkConnectionString,
-      DiscoveryCallback callback)
+      ScheduledExecutorService tagsPollingExecutor,
+      ReplicasDiscoveryCallback callback)
       throws SQLException {
-    super(fairlinkConfiguration, fairlinkConnectionString, callback);
+    super(fairlinkConfiguration, fairlinkConnectionString, tagsPollingExecutor, callback);
     this.replicaEndpointTemplate = fairlinkConfiguration.getReplicaEndpointTemplate();
   }
 
@@ -42,7 +44,7 @@ public class SqlReplicasFinder extends BaseReadReplicasFinder {
               new DatabaseInstance(
                   DatabaseInstanceRole.valueOf(
                       DatabaseInstanceRole.class, resultSet.getString("role")),
-                  resultSet.getString("server_id")));
+                  String.format(this.replicaEndpointTemplate, resultSet.getString("server_id"))));
         }
       }
     } catch (SQLException e) {

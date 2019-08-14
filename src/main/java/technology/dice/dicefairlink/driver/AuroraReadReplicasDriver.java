@@ -5,7 +5,7 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import com.amazonaws.regions.Region;
+import software.amazon.awssdk.regions.Region;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import technology.dice.dicefairlink.ParsedUrl;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
@@ -32,7 +32,8 @@ public class AuroraReadReplicasDriver implements Driver {
   private final Map<String, Driver> delegates = new HashMap<>();
   private final Map<String, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
 
-  private final Supplier<ScheduledExecutorService> executorSupplier;
+  private final Supplier<ScheduledExecutorService> discoveryExecutor;
+  private final Supplier<ScheduledExecutorService> tagPollExecutor;
 
   static {
     try {
@@ -44,12 +45,15 @@ public class AuroraReadReplicasDriver implements Driver {
   }
 
   public AuroraReadReplicasDriver() {
-    this(() -> Executors.newScheduledThreadPool(1));
+    this(() -> Executors.newScheduledThreadPool(1), () -> Executors.newScheduledThreadPool(1));
   }
 
-  public AuroraReadReplicasDriver(final Supplier<ScheduledExecutorService> executorSupplier) {
+  public AuroraReadReplicasDriver(
+      final Supplier<ScheduledExecutorService> discoveryExecutor,
+      final Supplier<ScheduledExecutorService> tagPollExecutor) {
     LOGGER.fine("Starting...");
-    this.executorSupplier = executorSupplier;
+    this.discoveryExecutor = discoveryExecutor;
+    this.tagPollExecutor = tagPollExecutor;
   }
 
   @Override
@@ -126,7 +130,10 @@ public class AuroraReadReplicasDriver implements Driver {
         // are only processed once per uri, the driver does not support dynamically changing them
         final AuroraReadonlyEndpoint roEndpoint =
             new AuroraReadonlyEndpoint(
-                fairlinkConnectionString, fairlinkConfiguration, executorSupplier.get());
+                fairlinkConnectionString,
+                fairlinkConfiguration,
+                discoveryExecutor.get(),
+                tagPollExecutor.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
         if (!fairlinkConfiguration.isDiscoveryModeValidForDelegate(

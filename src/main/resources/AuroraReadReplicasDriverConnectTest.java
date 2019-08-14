@@ -3,7 +3,6 @@
  *
  * Please see distribution for license.
  */
-package technology.dice.dicefairlink.driver;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
@@ -35,20 +34,18 @@ import java.util.Properties;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
-public class AuroraReadReplicasDriverConnectSameListTest {
+public class AuroraReadReplicasDriverConnectTest {
 
   private static final ListTagsForResourceResult EMPTY_TAG_RESULT =
       new ListTagsForResourceResult().withTagList();
   private static final String VALID_JDBC_URL =
-      "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
+      "jdbc:auroraro:postgresql://aa:123/db?param1=123&param2=true&param3=abc";
   private static final String DELEGATE_JDBC_URL =
-      "jdbc:mysql://aa:123/db?param1=123&param2=true&param3=abc";
-  private static final String VALID_ENDPOINT_ADDRESS_A = "replica-1-ro";
-  private static final String VALID_ENDPOINT_ADDRESS_B = "replica-2-ro";
+      "jdbc:postgresql://aa:123/db?param1=123&param2=true&param3=abc";
+  private static final String VALID_ENDPOINT_ADDRESS = "replica-1-ro";
 
   @Test
   @PrepareForTest({
@@ -59,8 +56,7 @@ public class AuroraReadReplicasDriverConnectSameListTest {
     AuroraReadReplicasDriver.class
   })
   public void canConnectToValidUrlBasicAuth() throws Exception {
-    final String stubInstanceId_A = "123";
-    final String stubInstanceId_B = "345";
+    final String stubInstanceId = "123";
 
     final Properties validProperties = new Properties();
     validProperties.put("replicaPollInterval", "1");
@@ -75,26 +71,20 @@ public class AuroraReadReplicasDriverConnectSameListTest {
     final DescribeDBClustersResult mockDescribeDBClustersResult =
         mock(DescribeDBClustersResult.class);
     final DBCluster mockDbCluster = mock(DBCluster.class);
-    final DBClusterMember mockDbClusterMember_A = mock(DBClusterMember.class);
-    final DBClusterMember mockDbClusterMember_B = mock(DBClusterMember.class);
-    final DescribeDBInstancesResult mockDbInstancesResult_A = mock(DescribeDBInstancesResult.class);
-    final DescribeDBInstancesResult mockDbInstancesResult_B = mock(DescribeDBInstancesResult.class);
-    final DBInstance mockDbInstance_A = mock(DBInstance.class);
-    final DBInstance mockDbInstance_B = mock(DBInstance.class);
-    final Endpoint mockEndpoint_A = mock(Endpoint.class);
-    final Endpoint mockEndpoint_B = mock(Endpoint.class);
+    final DBClusterMember mockDbClusterMember = mock(DBClusterMember.class);
+    final DescribeDBInstancesResult mockDbInstancesResult = mock(DescribeDBInstancesResult.class);
+    final DBInstance mockDbInstance = mock(DBInstance.class);
+    final Endpoint mockEndpoint = mock(Endpoint.class);
     final Driver mockDriver = mock(Driver.class);
 
     PowerMock.mockStatic(DriverManager.class);
-    DriverManager.registerDriver(EasyMock.anyObject(AuroraReadReplicasDriver.class));
-    PowerMock.expectLastCall();
+    PowerMockito.doNothing().doThrow(Exception.class).when(DriverManager.class);
     EasyMock.expect(DriverManager.getDriver(DELEGATE_JDBC_URL)).andReturn(mockDriver);
     PowerMock.replay(DriverManager.class);
 
     PowerMockito.mockStatic(AmazonRDSAsyncClient.class);
     PowerMockito.when(AmazonRDSAsyncClient.asyncBuilder())
         .thenReturn(mockAmazonRDSAsyncClientBuilder);
-
     Mockito.when(mockAmazonRDSAsyncClientBuilder.withRegion(Regions.EU_WEST_1.getName()))
         .thenReturn(mockAmazonRDSAsyncClientBuilder);
     Mockito.when(mockAmazonRDSAsyncClientBuilder.withCredentials(any(AWSCredentialsProvider.class)))
@@ -104,57 +94,32 @@ public class AuroraReadReplicasDriverConnectSameListTest {
         .thenReturn(mockDescribeDBClustersResult);
     Mockito.when(mockDescribeDBClustersResult.getDBClusters())
         .thenReturn(Arrays.asList(mockDbCluster));
+    Mockito.when(mockDbCluster.getDBClusterMembers())
+        .thenReturn(Arrays.asList(mockDbClusterMember));
+    Mockito.when(mockDbCluster.getReaderEndpoint()).thenReturn("readerEndpoint");
+    Mockito.when(mockDbClusterMember.isClusterWriter()).thenReturn(false);
+    Mockito.when(mockDbClusterMember.getDBInstanceIdentifier()).thenReturn(stubInstanceId);
+    Mockito.when(mockAmazonRDSAsync.describeDBInstances(any(DescribeDBInstancesRequest.class)))
+        .thenReturn(mockDbInstancesResult);
+    Mockito.when(mockDbInstancesResult.getDBInstances()).thenReturn(Arrays.asList(mockDbInstance));
+    Mockito.when(mockDbInstance.getEndpoint()).thenReturn(mockEndpoint);
+    Mockito.when(mockDbInstance.getDBInstanceStatus()).thenReturn("available");
+    Mockito.when(mockEndpoint.getAddress()).thenReturn(VALID_ENDPOINT_ADDRESS);
     Mockito.when(mockAmazonRDSAsync.listTagsForResource(any())).thenReturn(EMPTY_TAG_RESULT);
 
-    Mockito.when(mockDbCluster.getDBClusterMembers())
-        .thenReturn(Arrays.asList(mockDbClusterMember_A, mockDbClusterMember_B));
-    Mockito.when(mockDbClusterMember_A.isClusterWriter()).thenReturn(false);
-    Mockito.when(mockDbClusterMember_A.getDBInstanceIdentifier()).thenReturn(stubInstanceId_A);
-    Mockito.when(mockDbCluster.getReaderEndpoint()).thenReturn("readerEndpoint");
-
-    Mockito.when(mockDbClusterMember_B.isClusterWriter()).thenReturn(false);
-    Mockito.when(mockDbClusterMember_B.getDBInstanceIdentifier()).thenReturn(stubInstanceId_B);
-
-    Mockito.when(
-            mockAmazonRDSAsync.describeDBInstances(Mockito.any(DescribeDBInstancesRequest.class)))
-        .thenReturn(mockDbInstancesResult_A)
-        .thenReturn(mockDbInstancesResult_B)
-        .thenReturn(mockDbInstancesResult_A)
-        .thenReturn(mockDbInstancesResult_B)
-        .thenReturn(mockDbInstancesResult_A)
-        .thenReturn(mockDbInstancesResult_B);
-    Mockito.when(mockDbInstancesResult_A.getDBInstances())
-        .thenReturn(Arrays.asList(mockDbInstance_A));
-    Mockito.when(mockDbInstancesResult_B.getDBInstances())
-        .thenReturn(Arrays.asList(mockDbInstance_B));
-    Mockito.when(mockDbInstance_A.getEndpoint()).thenReturn(mockEndpoint_A);
-    Mockito.when(mockDbInstance_A.getDBInstanceStatus()).thenReturn("available");
-    Mockito.when(mockDbInstance_B.getEndpoint()).thenReturn(mockEndpoint_B);
-    Mockito.when(mockDbInstance_B.getDBInstanceStatus()).thenReturn("available");
-    Mockito.when(mockEndpoint_A.getAddress()).thenReturn(VALID_ENDPOINT_ADDRESS_A);
-    Mockito.when(mockEndpoint_B.getAddress()).thenReturn(VALID_ENDPOINT_ADDRESS_B);
-
-    final StepByStepExecutor stepByStepExecutor = new StepByStepExecutor(1);
+    final StepByStepExecutor discoveryExecutor = new StepByStepExecutor(1);
+    final StepByStepExecutor tagPollExecutor = new StepByStepExecutor(1);
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(() -> stepByStepExecutor);
+        new AuroraReadReplicasDriver(() -> discoveryExecutor, () -> tagPollExecutor);
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
-    stepByStepExecutor.step();
-    auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
-    stepByStepExecutor.step();
-    auroraReadReplicasDriver.connect(VALID_JDBC_URL, validProperties);
+    discoveryExecutor.step();
 
-    verify(mockDbClusterMember_A, times(3))
-        .isClusterWriter(); // 3 - because of: Init step + 2 execution steps in stepByStepExecutor
-    verify(mockDbClusterMember_A, times(3)).getDBInstanceIdentifier();
-    verify(mockDbInstance_A, times(3)).getEndpoint();
-    verify(mockEndpoint_A, times(3)).getAddress();
+    Mockito.verify(mockDbClusterMember, times(2))
+        .isClusterWriter(); // 2 - because of: Init step + execution steps in stepByStepExecutor
+    Mockito.verify(mockDbClusterMember, times(2)).getDBInstanceIdentifier();
+    Mockito.verify(mockDbInstance, times(2)).getEndpoint();
+    Mockito.verify(mockEndpoint, times(2)).getAddress();
 
-    verify(mockDbClusterMember_B, times(3)).isClusterWriter();
-    verify(mockDbClusterMember_B, times(3)).getDBInstanceIdentifier();
-    verify(mockDbInstance_B, times(3)).getEndpoint();
-    verify(mockEndpoint_B, times(3)).getAddress();
-
-    // PowerMock.verifyAll() can not be used in this test due to non-deterministic nature of
-    // RandomisedCyclicIterator.
+    PowerMock.verifyAll();
   }
 }

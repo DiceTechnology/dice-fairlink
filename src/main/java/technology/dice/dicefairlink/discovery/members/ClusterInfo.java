@@ -3,7 +3,7 @@
  *
  * Please see distribution for license.
  */
-package technology.dice.dicefairlink.discovery;
+package technology.dice.dicefairlink.discovery.members;
 
 import java.util.Collection;
 

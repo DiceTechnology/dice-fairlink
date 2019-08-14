@@ -6,8 +6,8 @@
 package technology.dice.dicefairlink;
 
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.discovery.BaseReadReplicasFinder;
-import technology.dice.dicefairlink.discovery.ReplicasFinderFactory;
+import technology.dice.dicefairlink.discovery.members.BaseReadReplicasFinder;
+import technology.dice.dicefairlink.discovery.members.ReplicasFinderFactory;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
 
@@ -26,13 +26,15 @@ public class AuroraReadonlyEndpoint {
   public AuroraReadonlyEndpoint(
       FairlinkConnectionString fairlinkConnectionString,
       FairlinkConfiguration fairlinkConfiguration,
-      ScheduledExecutorService executor)
+      ScheduledExecutorService replicaDiscoveryExecutor,
+      ScheduledExecutorService tagsPollingExecutor)
       throws SQLException {
 
     BaseReadReplicasFinder finder =
         ReplicasFinderFactory.getFinder(
             fairlinkConfiguration,
             fairlinkConnectionString,
+            tagsPollingExecutor,
             discoveredReplicas -> {
               replicas = discoveredReplicas;
               if (LOGGER.isLoggable(Level.FINE)) {
@@ -53,7 +55,7 @@ public class AuroraReadonlyEndpoint {
             fairlinkConnectionString.getHost(),
             replicas.size(),
             fairlinkConfiguration.getReplicaPollInterval()));
-    executor.scheduleAtFixedRate(
+    replicaDiscoveryExecutor.scheduleAtFixedRate(
         finder,
         fairlinkConfiguration.getReplicaPollInterval().getSeconds(),
         fairlinkConfiguration.getReplicaPollInterval().getSeconds(),

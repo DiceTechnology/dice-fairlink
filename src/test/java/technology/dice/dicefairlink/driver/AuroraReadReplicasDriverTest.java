@@ -21,14 +21,16 @@ public class AuroraReadReplicasDriverTest {
   @Test(expected = SQLException.class)
   public void throwsOnAcceptsURL_nullString() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
+        new AuroraReadReplicasDriver(
+            () -> new ScheduledThreadPoolExecutor(1), () -> new ScheduledThreadPoolExecutor(1));
     auroraReadReplicasDriver.acceptsURL(null);
   }
 
   @Test
   public void canAcceptsURL_emptyString() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
+        new AuroraReadReplicasDriver(
+            () -> new ScheduledThreadPoolExecutor(1), () -> new ScheduledThreadPoolExecutor(1));
     boolean retunedValue = auroraReadReplicasDriver.acceptsURL("");
     assertThat(retunedValue).isEqualTo(false);
   }
@@ -36,7 +38,8 @@ public class AuroraReadReplicasDriverTest {
   @Test
   public void refuses_vanillaJdbc() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
+        new AuroraReadReplicasDriver(
+            () -> new ScheduledThreadPoolExecutor(1), () -> new ScheduledThreadPoolExecutor(1));
     boolean retunedValue =
         auroraReadReplicasDriver.acceptsURL("jdbc:mysql://host:3306/id?useSSL=false");
     assertThat(retunedValue).isEqualTo(false);
@@ -45,7 +48,8 @@ public class AuroraReadReplicasDriverTest {
   @Test
   public void canAcceptsURL_validString() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
+        new AuroraReadReplicasDriver(
+            () -> new ScheduledThreadPoolExecutor(1), () -> new ScheduledThreadPoolExecutor(1));
     boolean retunedValue = auroraReadReplicasDriver.acceptsURL(VALID_JDBC_URL);
     assertThat(retunedValue).isEqualTo(true);
   }
@@ -53,14 +57,16 @@ public class AuroraReadReplicasDriverTest {
   @Test(expected = NullPointerException.class)
   public void failToConnectToValidUrl_nullProperties() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
+        new AuroraReadReplicasDriver(
+            () -> new ScheduledThreadPoolExecutor(1), () -> new ScheduledThreadPoolExecutor(1));
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, null); // last call must throw
   }
 
   @Test(expected = IllegalStateException.class)
   public void failToConnectToValidUrl_emptyProperties_andNoRegionAvailable() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver =
-        new AuroraReadReplicasDriver(() -> new ScheduledThreadPoolExecutor(1));
+        new AuroraReadReplicasDriver(
+            () -> new ScheduledThreadPoolExecutor(1), () -> new ScheduledThreadPoolExecutor(1));
     final Properties emptyProperties = new Properties();
     auroraReadReplicasDriver.connect(VALID_JDBC_URL, emptyProperties); // last call must throw
   }

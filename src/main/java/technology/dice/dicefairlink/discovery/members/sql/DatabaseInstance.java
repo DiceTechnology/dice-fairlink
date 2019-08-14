@@ -1,4 +1,4 @@
-package technology.dice.dicefairlink.discovery.sql;
+package technology.dice.dicefairlink.discovery.members.sql;
 
 public class DatabaseInstance {
   private final DatabaseInstanceRole role;
