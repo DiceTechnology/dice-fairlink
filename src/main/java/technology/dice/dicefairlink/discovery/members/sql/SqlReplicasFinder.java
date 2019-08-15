@@ -1,6 +1,5 @@
 package technology.dice.dicefairlink.discovery.members.sql;
 
-import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.members.ClusterInfo;
 import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
@@ -16,21 +15,18 @@ import java.util.stream.Collectors;
 
 public class SqlReplicasFinder implements MemberFinderMethod {
   private static final Logger LOGGER = Logger.getLogger(SqlReplicasFinder.class.getName());
+  private static final Set<DatabaseInstance> EMPTY_SET = new HashSet<>(0);
   private final String FIND_NODES_QUERY =
       "select server_id, if(session_id = 'MASTER_SESSION_ID',"
           + "'WRITER', 'READER') as role from "
           + "information_schema.replica_host_status;";
   private final Driver driverForDelegate;
   private final FairlinkConnectionString fairlinkConnectionString;
-  private final FairlinkConfiguration fairlinkConfiguration;
 
   public SqlReplicasFinder(
-      FairlinkConfiguration fairlinkConfiguration,
-      FairlinkConnectionString fairlinkConnectionString,
-      Driver driverForDelegate) {
+      FairlinkConnectionString fairlinkConnectionString, Driver driverForDelegate) {
     this.driverForDelegate = driverForDelegate;
     this.fairlinkConnectionString = fairlinkConnectionString;
-    this.fairlinkConfiguration = fairlinkConfiguration;
   }
 
   protected Set<DatabaseInstance> findReplicas() {
@@ -45,9 +41,7 @@ public class SqlReplicasFinder implements MemberFinderMethod {
               new DatabaseInstance(
                   DatabaseInstanceRole.valueOf(
                       DatabaseInstanceRole.class, resultSet.getString("role")),
-                  String.format(
-                      this.fairlinkConfiguration.getReplicaEndpointTemplate(),
-                      resultSet.getString("server_id"))));
+                  resultSet.getString("server_id")));
         }
       }
     } catch (Exception e) {
@@ -55,7 +49,7 @@ public class SqlReplicasFinder implements MemberFinderMethod {
           Level.SEVERE,
           "Failed to obtain cluster members due to exception. Returning empty set",
           e);
-      return new HashSet<>(0);
+      return EMPTY_SET;
     }
     return instances;
   }
@@ -63,13 +57,10 @@ public class SqlReplicasFinder implements MemberFinderMethod {
   @Override
   public ClusterInfo discoverCluster() {
     return new ClusterInfo(
-        this.fairlinkConnectionString.getFairlinkUri(),
+        this.fairlinkConnectionString.delegateConnectionString(),
         this.findReplicas().stream()
             .filter(databaseInstance -> databaseInstance.getRole() == DatabaseInstanceRole.READER)
-            .map(
-                e ->
-                    String.format(
-                        this.fairlinkConfiguration.getReplicaEndpointTemplate(), e.getId()))
+            .map(DatabaseInstance::getId)
             .collect(Collectors.toSet()));
   }
 }

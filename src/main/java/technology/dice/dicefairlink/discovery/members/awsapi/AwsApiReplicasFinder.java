@@ -8,20 +8,19 @@ package technology.dice.dicefairlink.discovery.members.awsapi;
 import software.amazon.awssdk.services.rds.RdsClient;
 import software.amazon.awssdk.services.rds.model.DBCluster;
 import software.amazon.awssdk.services.rds.model.DBClusterMember;
-import software.amazon.awssdk.services.rds.model.DBInstance;
 import software.amazon.awssdk.services.rds.model.DescribeDbClustersRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbClustersResponse;
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
-import software.amazon.awssdk.services.rds.model.DescribeDbInstancesResponse;
-import software.amazon.awssdk.services.rds.model.Endpoint;
+import software.amazon.awssdk.services.rds.model.Filter;
+import software.amazon.awssdk.services.rds.paginators.DescribeDBInstancesIterable;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.members.ClusterInfo;
 import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -29,6 +28,8 @@ import java.util.stream.Collectors;
 public class AwsApiReplicasFinder implements MemberFinderMethod {
   private static final Logger LOGGER = Logger.getLogger(AwsApiReplicasFinder.class.getName());
   private static final String ACTIVE_STATUS = "available";
+  private static final Set<String> EMPTY_SET = new HashSet<>(0);
+  public static final String DB_CLUSTER_ID_FILTER = "db-cluster-id";
   private final String clusterId;
   private final RdsClient client;
 
@@ -46,91 +47,65 @@ public class AwsApiReplicasFinder implements MemberFinderMethod {
             .build();
   }
 
-  private Optional<DBCluster> describeCluster() {
+  private DBCluster describeCluster(String clusterId) {
     final DescribeDbClustersResponse describeDbClustersResponse =
         client.describeDBClusters(
-            DescribeDbClustersRequest.builder().dbClusterIdentifier(this.clusterId).build());
-    return describeDbClustersResponse.dbClusters().stream().findFirst();
+            DescribeDbClustersRequest.builder().dbClusterIdentifier(clusterId).build());
+    return describeDbClustersResponse.dbClusters().stream()
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new RuntimeException(
+                    String.format(
+                        "Could not find exactly one cluster with cluster id [%s]", clusterId)));
+  }
+
+  private Set<String> replicaMembersOf(DBCluster cluster) {
+    try {
+      DescribeDbInstancesRequest request =
+          DescribeDbInstancesRequest.builder()
+              .filters(
+                  Filter.builder()
+                      .name(DB_CLUSTER_ID_FILTER)
+                      .values(cluster.dbClusterIdentifier())
+                      .build())
+              .build();
+      final Optional<DBClusterMember> writer =
+          cluster.dbClusterMembers().stream().filter(member -> member.isClusterWriter()).findAny();
+      final DescribeDBInstancesIterable describeDbInstancesResponses =
+          client.describeDBInstancesPaginator(request);
+      final Set<String> replicaIds =
+          describeDbInstancesResponses.stream()
+              .flatMap(
+                  dbInstances ->
+                      dbInstances.dbInstances().stream()
+                          .filter(
+                              dbInstance ->
+                                  dbInstance.dbInstanceStatus().equalsIgnoreCase(ACTIVE_STATUS))
+                          .filter(
+                              dbInstance ->
+                                  !writer
+                                      .map(
+                                          w ->
+                                              w.dbInstanceIdentifier()
+                                                  .equalsIgnoreCase(
+                                                      dbInstance.dbInstanceIdentifier()))
+                                      .orElse(false))
+                          .map(dbInstance -> dbInstance.dbInstanceIdentifier()))
+              .collect(Collectors.toSet());
+
+      return replicaIds;
+
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.SEVERE, "Failed to list cluster replicas. Returning an empty set of replicas", e);
+      return EMPTY_SET;
+    }
   }
 
   @Override
   public ClusterInfo discoverCluster() {
-    Optional<DBCluster> dbClusterOptional = this.describeCluster();
-    if (!dbClusterOptional.isPresent()) {
-      throw new RuntimeException(
-          String.format("Could not find exactly one cluster with cluster id [%s]", this.clusterId));
-    }
-    DBCluster cluster = dbClusterOptional.get();
-    List<String> readerUrls = replicaMembersOf(cluster);
-
-    return new ClusterInfo(cluster.readerEndpoint(), readerUrls);
-  }
-
-  private List<String> replicaMembersOf(DBCluster cluster) {
-    List<DBClusterMember> readReplicas =
-        cluster.dbClusterMembers().stream()
-            .filter(member -> !member.isClusterWriter())
-            .collect(Collectors.toList());
-    List<String> urls = new ArrayList<>(readReplicas.size());
-    for (DBClusterMember readReplica : readReplicas) {
-      try {
-        // the only functionally relevant branch of this iteration's branch is the final "else"
-        // (replica has an endpoint
-        // and is ACTIvE_STATUS. . All the other cases are for logging/visibility purposes only
-        final String dbInstanceIdentifier = readReplica.dbInstanceIdentifier();
-        LOGGER.log(
-            Level.FINE,
-            String.format(
-                "Found read replica in cluster [%s]: [%s])", clusterId, dbInstanceIdentifier));
-
-        DescribeDbInstancesResponse describeDBInstancesResult =
-            client.describeDBInstances(
-                DescribeDbInstancesRequest.builder()
-                    .dbInstanceIdentifier(dbInstanceIdentifier)
-                    .build());
-        if (describeDBInstancesResult.dbInstances().size() != 1) {
-          LOGGER.log(
-              Level.WARNING,
-              String.format(
-                  "Got [%s] database instances for identifier [%s] (member of cluster [%s]). This is unexpected. Skipping.",
-                  describeDBInstancesResult.dbInstances().size(), dbInstanceIdentifier, clusterId));
-        } else {
-          DBInstance readerInstance = describeDBInstancesResult.dbInstances().get(0);
-
-          Endpoint endpoint = readerInstance.endpoint();
-          if (!ACTIVE_STATUS.equalsIgnoreCase(readerInstance.dbInstanceStatus())) {
-            LOGGER.warning(
-                String.format(
-                    "Found [%s] as a replica for [%s] but its status is [%s]. Only replicas with status of [%s] are accepted. Skipping",
-                    dbInstanceIdentifier,
-                    clusterId,
-                    readerInstance.dbInstanceStatus(),
-                    ACTIVE_STATUS));
-          } else if (endpoint == null) {
-            LOGGER.log(
-                Level.WARNING,
-                String.format(
-                    "Found [%s] as a replica for [%s] but it does not have a reachable address. Maybe it is still being created. Skipping",
-                    dbInstanceIdentifier, clusterId));
-          } else {
-            final String endPointAddress = endpoint.address();
-            LOGGER.log(
-                Level.FINE,
-                String.format(
-                    "Accepted instance with id [%s] with URL=[%s] to cluster [%s]",
-                    dbInstanceIdentifier, endPointAddress, clusterId));
-            urls.add(endPointAddress);
-          }
-        }
-      } catch (Exception ex) {
-        LOGGER.log(
-            Level.SEVERE,
-            String.format(
-                "Got exception when processing [%s] member of [%s]. Skipping.",
-                readReplica.dbInstanceIdentifier(), clusterId),
-            ex);
-      }
-    }
-    return urls;
+    final DBCluster cluster = this.describeCluster(this.clusterId);
+    return new ClusterInfo(cluster.readerEndpoint(), replicaMembersOf(cluster));
   }
 }

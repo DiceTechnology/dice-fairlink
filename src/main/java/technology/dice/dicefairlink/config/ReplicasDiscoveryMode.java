@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum ReplicasDiscoveryMode {
-  RDS_API,
+  AWS_API,
   SQL_MYSQL;
 
   public static Optional<ReplicasDiscoveryMode> fromStringInsensitive(String candidate) {

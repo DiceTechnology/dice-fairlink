@@ -61,7 +61,7 @@ public class FairlinkConfiguration {
   }
 
   private void validateConfiguration() {
-    if (this.replicasDiscoveryMode == ReplicasDiscoveryMode.RDS_API) {
+    if (this.replicasDiscoveryMode == ReplicasDiscoveryMode.AWS_API) {
       this.validateAwsApiDiscovery();
     } else {
       this.validateSqlDiscovery();
@@ -86,8 +86,8 @@ public class FairlinkConfiguration {
   private ReplicasDiscoveryMode resolveDiscoveryMode(Properties properties) {
     return ReplicasDiscoveryMode.fromStringInsensitive(
             properties.getProperty(
-                DISCOVERY_MODE_PROPERTY_NAME, ReplicasDiscoveryMode.RDS_API.name()))
-        .orElse(ReplicasDiscoveryMode.RDS_API);
+                DISCOVERY_MODE_PROPERTY_NAME, ReplicasDiscoveryMode.AWS_API.name()))
+        .orElse(ReplicasDiscoveryMode.AWS_API);
   }
 
   private AwsCredentialsProvider awsAuth(Properties properties) {
@@ -178,8 +178,8 @@ public class FairlinkConfiguration {
     return auroraClusterRegion.get();
   }
 
-  public String getReplicaEndpointTemplate() {
-    return replicaEndpointTemplate.get();
+  public String hostname(String fromDbIdentifier) {
+    return String.format(replicaEndpointTemplate.get(), fromDbIdentifier);
   }
 
   public boolean isValidateConnection() {

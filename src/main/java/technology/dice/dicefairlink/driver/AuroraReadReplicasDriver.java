@@ -10,11 +10,15 @@ import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import technology.dice.dicefairlink.ParsedUrl;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.members.FairlinkMemberFinder;
-import technology.dice.dicefairlink.discovery.members.ReplicasFinderFactory;
-import technology.dice.dicefairlink.discovery.tags.ExclusionTagFinderFactory;
+import technology.dice.dicefairlink.discovery.members.JdbcConnectionValidator;
+import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
+import technology.dice.dicefairlink.discovery.members.ReplicaValidator;
+import technology.dice.dicefairlink.discovery.members.awsapi.AwsApiReplicasFinder;
+import technology.dice.dicefairlink.discovery.members.sql.SqlReplicasFinder;
 import technology.dice.dicefairlink.discovery.tags.TagFilter;
-import technology.dice.dicefairlink.iterators.RandomisedCyclicIteatorBuilder;
-import technology.dice.dicefairlink.iterators.SizedIteratorBuilder;
+import technology.dice.dicefairlink.discovery.tags.awsapi.ResourceGroupApiTagDiscovery;
+import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
+import technology.dice.dicefairlink.iterators.SizedIterator;
 
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -22,6 +26,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -29,6 +34,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,7 +48,8 @@ public class AuroraReadReplicasDriver implements Driver {
   private final Supplier<ScheduledExecutorService> tagPollExecutor;
   private final Optional<TagFilter> tagFilter;
   private final Optional<FairlinkMemberFinder> fairlinkMemberFinder;
-  private final Optional<SizedIteratorBuilder<String>> sizedIteratorBuilder;
+  private final Optional<Function<Collection<String>, SizedIterator<String>>> sizedIteratorBuilder;
+  private final Optional<ReplicaValidator> replicaValidator;
 
   static {
     try {
@@ -59,6 +66,7 @@ public class AuroraReadReplicasDriver implements Driver {
         () -> Executors.newScheduledThreadPool(1),
         null,
         null,
+        null,
         null);
   }
 
@@ -67,11 +75,13 @@ public class AuroraReadReplicasDriver implements Driver {
       final Supplier<ScheduledExecutorService> tagPollExecutor,
       final TagFilter tagFilter,
       final FairlinkMemberFinder memberFinder,
-      final SizedIteratorBuilder<String> iteratorBuilder) {
+      final ReplicaValidator replicaValidator,
+      final Function<Collection<String>, SizedIterator<String>> iteratorBuilder) {
     LOGGER.fine("Starting...");
     this.discoveryExecutor = discoveryExecutor;
     this.tagPollExecutor = tagPollExecutor;
     this.tagFilter = Optional.ofNullable(tagFilter);
+    this.replicaValidator = Optional.ofNullable(replicaValidator);
     this.fairlinkMemberFinder = Optional.ofNullable(memberFinder);
     this.sizedIteratorBuilder = Optional.ofNullable(iteratorBuilder);
   }
@@ -157,20 +167,7 @@ public class AuroraReadReplicasDriver implements Driver {
             new AuroraReadonlyEndpoint(
                 fairlinkConfiguration,
                 this.fairlinkMemberFinder.orElseGet(
-                    () ->
-                        new FairlinkMemberFinder(
-                            fairlinkConfiguration,
-                            fairlinkConnectionString,
-                            this.tagPollExecutor.get(),
-                            this.tagFilter.orElseGet(
-                                () ->
-                                    ExclusionTagFinderFactory.getTagFilter(fairlinkConfiguration)),
-                            ReplicasFinderFactory.getFinder(
-                                fairlinkConfiguration,
-                                fairlinkConnectionString,
-                                this.delegates.get(fairlinkConnectionString.getDelegateProtocol())),
-                            this.sizedIteratorBuilder.orElse(new RandomisedCyclicIteatorBuilder<>()),
-                            this.delegates.get(fairlinkConnectionString.getDelegateProtocol()))),
+                    () -> memberFinder(fairlinkConnectionString, fairlinkConfiguration)),
                 this.discoveryExecutor.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
@@ -200,6 +197,40 @@ public class AuroraReadReplicasDriver implements Driver {
     } catch (URISyntaxException | NoSuchElementException | IllegalArgumentException e) {
       LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + url, e);
       return Optional.empty();
+    }
+  }
+
+  private FairlinkMemberFinder memberFinder(
+      FairlinkConnectionString fairlinkConnectionString,
+      FairlinkConfiguration fairlinkConfiguration) {
+    return new FairlinkMemberFinder(
+        fairlinkConfiguration,
+        fairlinkConnectionString,
+        this.tagPollExecutor.get(),
+        this.tagFilter.orElseGet(() -> new ResourceGroupApiTagDiscovery(fairlinkConfiguration)),
+        this.memberFinderMethod(
+            fairlinkConfiguration,
+            fairlinkConnectionString,
+            this.delegates.get(fairlinkConnectionString.getDelegateProtocol())),
+        this.sizedIteratorBuilder.orElse(strings -> RandomisedCyclicIterator.of(strings)),
+        this.replicaValidator.orElse(
+            new JdbcConnectionValidator(
+                this.delegates.get(fairlinkConnectionString.getDelegateProtocol()))));
+  }
+
+  private MemberFinderMethod memberFinderMethod(
+      FairlinkConfiguration fairlinkConfiguration,
+      FairlinkConnectionString fairlinkConnectionString,
+      Driver driver) {
+    switch (fairlinkConfiguration.getReplicasDiscoveryMode()) {
+      case AWS_API:
+        return new AwsApiReplicasFinder(fairlinkConfiguration, fairlinkConnectionString);
+      case SQL_MYSQL:
+        return new SqlReplicasFinder(fairlinkConnectionString, driver);
+      default:
+        throw new IllegalArgumentException(
+            fairlinkConfiguration.getReplicasDiscoveryMode().name()
+                + "is not a valid discovery mode");
     }
   }
 

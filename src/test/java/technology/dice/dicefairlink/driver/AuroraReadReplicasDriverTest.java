@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AuroraReadReplicasDriverTest {
 
   private static final String VALID_JDBC_URL =
-      "jdbc:auroraro:mysql://aa:123/db?param1=123&param2=true&param3=abc";
+      "jdbc:auroraro:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
 
   @Test(expected = SQLException.class)
   public void throwsOnAcceptsURL_nullString() throws Exception {
@@ -34,7 +34,7 @@ public class AuroraReadReplicasDriverTest {
   public void refuses_vanillaJdbc() throws Exception {
     AuroraReadReplicasDriver auroraReadReplicasDriver = new AuroraReadReplicasDriver();
     boolean retunedValue =
-        auroraReadReplicasDriver.acceptsURL("jdbc:mysql://host:3306/id?useSSL=false");
+        auroraReadReplicasDriver.acceptsURL("jdbc:fairlinktestdriver://host:3306/id?useSSL=false");
     assertThat(retunedValue).isEqualTo(false);
   }
 

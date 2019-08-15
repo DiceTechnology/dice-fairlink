@@ -22,7 +22,6 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
 
   private final ResourceGroupsTaggingApiClient client;
   private final Collection<String> typeFilter;
-  private final String replicaEndpointTemplate;
 
   public ResourceGroupApiTagDiscovery(FairlinkConfiguration fairlinkConfiguration) {
     this.client =
@@ -32,7 +31,6 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
             .build();
     this.typeFilter = new ArrayList<>(1);
     this.typeFilter.add(RDS_DB_INSTANCE_FILTER);
-    this.replicaEndpointTemplate = fairlinkConfiguration.getReplicaEndpointTemplate();
   }
 
   @Override
@@ -55,7 +53,6 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
                       p.resourceTagMappingList().stream()
                           .map(
                               e -> e.resourceARN().substring(e.resourceARN().lastIndexOf(":") + 1)))
-              .map(id -> String.format(this.replicaEndpointTemplate, id))
               .collect(Collectors.toSet());
       LOGGER.info(
           "Found "

@@ -1,4 +1,4 @@
-package technology.dice.dicefairlink.driver;
+package technology.dice.dicefairlink;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
