@@ -5,27 +5,18 @@ import technology.dice.dicefairlink.discovery.members.awsapi.AwsApiReplicasFinde
 import technology.dice.dicefairlink.discovery.members.sql.SqlReplicasFinder;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
-import java.sql.SQLException;
-import java.util.concurrent.ScheduledExecutorService;
+import java.sql.Driver;
 
 public class ReplicasFinderFactory {
-  public static BaseReadReplicasFinder getFinder(
+  public static MemberFinderMethod getFinder(
       FairlinkConfiguration configuration,
       FairlinkConnectionString fairlinkConnectionString,
-      ScheduledExecutorService tagsPollingExecutor,
-      ReplicasDiscoveryCallback callback)
-      throws SQLException {
+      Driver driverForDelegate) {
     switch (configuration.getReplicasDiscoveryMode()) {
       case RDS_API:
-        return new AwsApiReplicasFinder(
-            configuration, fairlinkConnectionString, tagsPollingExecutor, callback);
+        return new AwsApiReplicasFinder(configuration, fairlinkConnectionString);
       case SQL_MYSQL:
-        try {
-          return new SqlReplicasFinder(
-              configuration, fairlinkConnectionString, tagsPollingExecutor, callback);
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
-        }
+        return new SqlReplicasFinder(configuration, fairlinkConnectionString, driverForDelegate);
       default:
         throw new IllegalArgumentException(
             configuration.getReplicasDiscoveryMode().name() + "is not a valid discovery mode");

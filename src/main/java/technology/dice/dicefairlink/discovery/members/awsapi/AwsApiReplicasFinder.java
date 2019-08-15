@@ -15,21 +15,18 @@ import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesResponse;
 import software.amazon.awssdk.services.rds.model.Endpoint;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.discovery.members.BaseReadReplicasFinder;
 import technology.dice.dicefairlink.discovery.members.ClusterInfo;
-import technology.dice.dicefairlink.discovery.members.ReplicasDiscoveryCallback;
+import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
+public class AwsApiReplicasFinder implements MemberFinderMethod {
   private static final Logger LOGGER = Logger.getLogger(AwsApiReplicasFinder.class.getName());
   private static final String ACTIVE_STATUS = "available";
   private final String clusterId;
@@ -37,11 +34,8 @@ public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
 
   public AwsApiReplicasFinder(
       FairlinkConfiguration fairlinkConfiguration,
-      FairlinkConnectionString fairlinkConnectionString,
-      ScheduledExecutorService taggPollingExecutor,
-      ReplicasDiscoveryCallback callback)
-      throws SQLException {
-    super(fairlinkConfiguration, fairlinkConnectionString, taggPollingExecutor, callback);
+      FairlinkConnectionString fairlinkConnectionString) {
+
     this.clusterId = fairlinkConnectionString.getHost();
     LOGGER.log(Level.INFO, "Cluster ID: {0}", fairlinkConnectionString.getHost());
     LOGGER.log(Level.INFO, "AWS Region: {0}", fairlinkConfiguration.getAuroraClusterRegion());
@@ -60,7 +54,7 @@ public class AwsApiReplicasFinder extends BaseReadReplicasFinder {
   }
 
   @Override
-  protected ClusterInfo discoverCluster() {
+  public ClusterInfo discoverCluster() {
     Optional<DBCluster> dbClusterOptional = this.describeCluster();
     if (!dbClusterOptional.isPresent()) {
       throw new RuntimeException(

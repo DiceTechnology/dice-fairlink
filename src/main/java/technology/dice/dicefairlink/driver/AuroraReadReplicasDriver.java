@@ -9,6 +9,12 @@ import software.amazon.awssdk.regions.Region;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
 import technology.dice.dicefairlink.ParsedUrl;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
+import technology.dice.dicefairlink.discovery.members.FairlinkMemberFinder;
+import technology.dice.dicefairlink.discovery.members.ReplicasFinderFactory;
+import technology.dice.dicefairlink.discovery.tags.ExclusionTagFinderFactory;
+import technology.dice.dicefairlink.discovery.tags.TagFilter;
+import technology.dice.dicefairlink.iterators.RandomisedCyclicIteatorBuilder;
+import technology.dice.dicefairlink.iterators.SizedIteratorBuilder;
 
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -34,6 +40,9 @@ public class AuroraReadReplicasDriver implements Driver {
 
   private final Supplier<ScheduledExecutorService> discoveryExecutor;
   private final Supplier<ScheduledExecutorService> tagPollExecutor;
+  private final Optional<TagFilter> tagFilter;
+  private final Optional<FairlinkMemberFinder> fairlinkMemberFinder;
+  private final Optional<SizedIteratorBuilder<String>> sizedIteratorBuilder;
 
   static {
     try {
@@ -45,15 +54,26 @@ public class AuroraReadReplicasDriver implements Driver {
   }
 
   public AuroraReadReplicasDriver() {
-    this(() -> Executors.newScheduledThreadPool(1), () -> Executors.newScheduledThreadPool(1));
+    this(
+        () -> Executors.newScheduledThreadPool(1),
+        () -> Executors.newScheduledThreadPool(1),
+        null,
+        null,
+        null);
   }
 
   public AuroraReadReplicasDriver(
       final Supplier<ScheduledExecutorService> discoveryExecutor,
-      final Supplier<ScheduledExecutorService> tagPollExecutor) {
+      final Supplier<ScheduledExecutorService> tagPollExecutor,
+      final TagFilter tagFilter,
+      final FairlinkMemberFinder memberFinder,
+      final SizedIteratorBuilder<String> iteratorBuilder) {
     LOGGER.fine("Starting...");
     this.discoveryExecutor = discoveryExecutor;
     this.tagPollExecutor = tagPollExecutor;
+    this.tagFilter = Optional.ofNullable(tagFilter);
+    this.fairlinkMemberFinder = Optional.ofNullable(memberFinder);
+    this.sizedIteratorBuilder = Optional.ofNullable(iteratorBuilder);
   }
 
   @Override
@@ -128,12 +148,30 @@ public class AuroraReadReplicasDriver implements Driver {
         LOGGER.log(Level.FINE, "Region: {0}", region);
         // because AWS credentials, region and poll interval properties
         // are only processed once per uri, the driver does not support dynamically changing them
+
+        this.addDriverForDelegate(
+            fairlinkConnectionString.getDelegateProtocol(),
+            fairlinkConnectionString.delegateConnectionString());
+
         final AuroraReadonlyEndpoint roEndpoint =
             new AuroraReadonlyEndpoint(
-                fairlinkConnectionString,
                 fairlinkConfiguration,
-                discoveryExecutor.get(),
-                tagPollExecutor.get());
+                this.fairlinkMemberFinder.orElseGet(
+                    () ->
+                        new FairlinkMemberFinder(
+                            fairlinkConfiguration,
+                            fairlinkConnectionString,
+                            this.tagPollExecutor.get(),
+                            this.tagFilter.orElseGet(
+                                () ->
+                                    ExclusionTagFinderFactory.getTagFilter(fairlinkConfiguration)),
+                            ReplicasFinderFactory.getFinder(
+                                fairlinkConfiguration,
+                                fairlinkConnectionString,
+                                this.delegates.get(fairlinkConnectionString.getDelegateProtocol())),
+                            this.sizedIteratorBuilder.orElse(new RandomisedCyclicIteatorBuilder<>()),
+                            this.delegates.get(fairlinkConnectionString.getDelegateProtocol()))),
+                this.discoveryExecutor.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
         if (!fairlinkConfiguration.isDiscoveryModeValidForDelegate(
@@ -146,9 +184,6 @@ public class AuroraReadReplicasDriver implements Driver {
         this.auroraClusters.put(fairlinkConnectionString.getFairlinkUri(), roEndpoint);
       }
 
-      this.addDriverForDelegate(
-          fairlinkConnectionString.getDelegateProtocol(),
-          fairlinkConnectionString.delegateConnectionString());
       final String nextReplica =
           auroraClusters.get(fairlinkConnectionString.getFairlinkUri()).getNextReplica();
       LOGGER.fine(

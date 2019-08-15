@@ -6,7 +6,6 @@
 package technology.dice.dicefairlink.iterators;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -14,14 +13,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class RandomisedCyclicIterator<T> implements Iterator<T> {
+public class RandomisedCyclicIterator<T> implements SizedIterator<T> {
 
   private final List<T> elements;
   private Iterator<T> iterator;
-
-  protected RandomisedCyclicIterator(T... replicas) {
-    this(Arrays.asList(replicas));
-  }
 
   protected RandomisedCyclicIterator(Collection<? extends T> collection) {
     this.elements = new ArrayList<>(collection);
@@ -31,10 +26,6 @@ public class RandomisedCyclicIterator<T> implements Iterator<T> {
 
   public static <T> RandomisedCyclicIterator<T> of(Collection<? extends T> collection) {
     return new RandomisedCyclicIterator<>(collection);
-  }
-
-  public static <T> RandomisedCyclicIterator<T> of(T... replicas) {
-    return new RandomisedCyclicIterator<>(replicas);
   }
 
   @Override
@@ -56,5 +47,10 @@ public class RandomisedCyclicIterator<T> implements Iterator<T> {
     }
     T next = iterator.next();
     return next;
+  }
+
+  @Override
+  public int getSize() {
+    return elements.size();
   }
 }

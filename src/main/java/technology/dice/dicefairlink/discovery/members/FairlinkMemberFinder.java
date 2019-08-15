@@ -7,48 +7,50 @@ package technology.dice.dicefairlink.discovery.members;
 
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.tags.ExclusionTag;
-import technology.dice.dicefairlink.discovery.tags.ExclusionTagFinderFactory;
 import technology.dice.dicefairlink.discovery.tags.TagFilter;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
-import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
+import technology.dice.dicefairlink.iterators.SizedIteratorBuilder;
 
 import java.sql.Connection;
 import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public abstract class BaseReadReplicasFinder implements Runnable {
+public class FairlinkMemberFinder {
   private static final String EXCLUSION_TAG_KEY = "Fairlink-Exclude";
-  private static final Logger LOGGER = Logger.getLogger(BaseReadReplicasFinder.class.getName());
-  private final ReplicasDiscoveryCallback callback;
+  private static final Logger LOGGER = Logger.getLogger(FairlinkMemberFinder.class.getName());
   private final FairlinkConfiguration fairlinkConfiguration;
+  private final MemberFinderMethod memberFinder;
+  private final Driver driverForDelegate;
+  private final SizedIteratorBuilder<String> iteratorBuilder;
   private String fallbackReadOnlyEndpoint;
   protected final FairlinkConnectionString fairlinkConnectionString;
-  protected final Driver driverForDelegate;
   protected final TagFilter tagFilter;
   protected Collection<String> excludedInstanceIds = new HashSet<>(0);
 
-  public BaseReadReplicasFinder(
+  public FairlinkMemberFinder(
       FairlinkConfiguration fairlinkConfiguration,
       FairlinkConnectionString fairlinkConnectionString,
       ScheduledExecutorService tagsPollingExecutor,
-      ReplicasDiscoveryCallback callback)
-      throws SQLException {
-    this.callback = callback;
+      TagFilter excludedInstancesFinder,
+      MemberFinderMethod memberFinder,
+      SizedIteratorBuilder<String> stringSizedIteratorBuilder,
+      Driver driverForDelegate) {
     this.fairlinkConnectionString = fairlinkConnectionString;
     this.fairlinkConfiguration = fairlinkConfiguration;
-    this.tagFilter = ExclusionTagFinderFactory.getTagFilter(fairlinkConfiguration);
-    this.driverForDelegate =
-        DriverManager.getDriver(fairlinkConnectionString.delegateConnectionString());
+    this.tagFilter = excludedInstancesFinder;
+    this.memberFinder = memberFinder;
+    this.driverForDelegate = driverForDelegate;
     final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
+    this.iteratorBuilder = stringSizedIteratorBuilder;
     LOGGER.info("Starting excluded members discovery with " + startJitter + " delay.");
     tagsPollingExecutor.scheduleAtFixedRate(
         () ->
@@ -60,11 +62,9 @@ public abstract class BaseReadReplicasFinder implements Runnable {
         TimeUnit.SECONDS);
   }
 
-  protected abstract ClusterInfo discoverCluster();
-
-  private final RandomisedCyclicIterator<String> discoverReplicas() {
+  public final Iterator<String> discoverReplicas() {
     long before = System.currentTimeMillis();
-    final ClusterInfo clusterInfo = discoverCluster();
+    final ClusterInfo clusterInfo = this.memberFinder.discoverCluster();
     fallbackReadOnlyEndpoint = clusterInfo.getReadonlyEndpoint();
     final Set<String> filteredReplicas =
         clusterInfo.getReplicas().stream()
@@ -74,17 +74,17 @@ public abstract class BaseReadReplicasFinder implements Runnable {
                         || this.validateConnection(db))
             .filter(db -> !excludedInstanceIds.contains(db))
             .collect(Collectors.toSet());
-    final RandomisedCyclicIterator<String> result =
+    final Iterator<String> result =
         filteredReplicas.isEmpty()
-            ? RandomisedCyclicIterator.of(clusterInfo.getReadonlyEndpoint())
-            : RandomisedCyclicIterator.of(filteredReplicas);
+            ? this.iteratorBuilder.from(clusterInfo.getReadonlyEndpoint())
+            : this.iteratorBuilder.from(filteredReplicas);
     long after = System.currentTimeMillis();
     LOGGER.info(
         "Updated list of replicas in "
             + (after - before)
             + " ms. Found "
             + filteredReplicas.size()
-            + " good, active replica"
+            + " good, active, non-excluded replica"
             + (filteredReplicas.size() != 1 ? "s" : "")
             + " (validation "
             + (fairlinkConfiguration.isValidateConnection() ? "" : "NOT ")
@@ -105,8 +105,14 @@ public abstract class BaseReadReplicasFinder implements Runnable {
     return true;
   }
 
-  public final RandomisedCyclicIterator<String> init() {
-    return this.discoverReplicas();
+  public final Iterator<String> init() {
+    final Iterator<String> replicasIterator = this.discoverReplicas();
+    LOGGER.log(
+        Level.INFO,
+        String.format(
+            "Initialised driver for cluster identified by [%s]. List will be refreshed every [%s]",
+            fairlinkConnectionString.getHost(), fairlinkConfiguration.getReplicaPollInterval()));
+    return replicasIterator;
   }
 
   protected String getFallbackReadOnlyEndpoint() {
@@ -115,10 +121,5 @@ public abstract class BaseReadReplicasFinder implements Runnable {
 
   public FairlinkConfiguration getFairlinkConfiguration() {
     return fairlinkConfiguration;
-  }
-
-  @Override
-  public final void run() {
-    this.callback.callback(this.discoverReplicas());
   }
 }
