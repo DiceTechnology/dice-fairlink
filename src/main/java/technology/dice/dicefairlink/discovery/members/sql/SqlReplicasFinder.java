@@ -8,8 +8,8 @@ import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -33,8 +33,8 @@ public class SqlReplicasFinder implements MemberFinderMethod {
     this.fairlinkConfiguration = fairlinkConfiguration;
   }
 
-  protected List<DatabaseInstance> findReplicas() {
-    List<DatabaseInstance> instances = new ArrayList<>();
+  protected Set<DatabaseInstance> findReplicas() {
+    Set<DatabaseInstance> instances = new HashSet<>();
     try (final Connection c =
         this.driverForDelegate.connect(
             fairlinkConnectionString.delegateConnectionString(),
@@ -53,9 +53,9 @@ public class SqlReplicasFinder implements MemberFinderMethod {
     } catch (Exception e) {
       LOGGER.log(
           Level.SEVERE,
-          "Failed to obtain cluster members due to exception. Returning empty list",
+          "Failed to obtain cluster members due to exception. Returning empty set",
           e);
-      return new ArrayList<>(0);
+      return new HashSet<>(0);
     }
     return instances;
   }
