@@ -8,13 +8,14 @@ import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class SqlReplicasFinder implements MemberFinderMethod {
-
+  private static final Logger LOGGER = Logger.getLogger(SqlReplicasFinder.class.getName());
   private final String FIND_NODES_QUERY =
       "select server_id, if(session_id = 'MASTER_SESSION_ID',"
           + "'WRITER', 'READER') as role from "
@@ -49,9 +50,12 @@ public class SqlReplicasFinder implements MemberFinderMethod {
                       resultSet.getString("server_id"))));
         }
       }
-    } catch (SQLException e) {
-      // TODO: handle me
-      e.printStackTrace();
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.SEVERE,
+          "Failed to obtain cluster members due to exception. Returning empty list",
+          e);
+      return new ArrayList<>(0);
     }
     return instances;
   }
