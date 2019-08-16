@@ -246,8 +246,6 @@ public class AuroraReadReplicasDriver implements Driver {
   }
 
   private void addDriverForDelegate(String delegate, final String stringURI) throws SQLException {
-    if (!this.delegates.containsKey(delegate)) {
-      this.delegates.put(delegate, DriverManager.getDriver(stringURI));
-    }
+    this.delegates.putIfAbsent(delegate, DriverManager.getDriver(stringURI));
   }
 }
