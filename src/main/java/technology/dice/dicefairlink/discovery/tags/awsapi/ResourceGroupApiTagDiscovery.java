@@ -54,7 +54,7 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
                           .map(
                               e -> e.resourceARN().substring(e.resourceARN().lastIndexOf(":") + 1)))
               .collect(Collectors.toSet());
-      LOGGER.info(
+      LOGGER.fine(
           "Found "
               + excludedDbInstances.size()
               + " excluded replica"
