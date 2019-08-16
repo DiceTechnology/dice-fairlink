@@ -10,7 +10,7 @@ public class FairlinkConnectionStringTest {
   @Test
   public void valid() throws URISyntaxException {
     String connString =
-        "jdbc:auroraro:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
+        "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
     final Properties properties = new Properties();
     properties.setProperty("a", "b");
     final FairlinkConnectionString underTest = new FairlinkConnectionString(connString, properties);
@@ -30,7 +30,7 @@ public class FairlinkConnectionStringTest {
   @Test
   public void validHostInDifferentPort() throws URISyntaxException {
     String connString =
-        "jdbc:auroraro:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
+        "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
     final Properties properties = new Properties();
     properties.setProperty("a", "b");
     final FairlinkConnectionString underTest = new FairlinkConnectionString(connString, properties);
@@ -51,7 +51,7 @@ public class FairlinkConnectionStringTest {
   public void accepts() {
     Assert.assertTrue(
         FairlinkConnectionString.accepts(
-            "jdbc:auroraro:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc"));
+            "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc"));
   }
 
   @Test

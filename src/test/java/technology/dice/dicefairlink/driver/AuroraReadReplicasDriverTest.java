@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class AuroraReadReplicasDriverTest {
   private static final String VALID_JDBC_URL =
-      "jdbc:auroraro:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
+      "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
 
   @Test
   public void driverInterfaceLock() {

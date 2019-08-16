@@ -7,7 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class FairlinkConnectionString {
-  private static final String DRIVER_PROTOCOL = "auroraro";
+  private static final String DRIVER_PROTOCOL = "fairlink";
   private static final Pattern driverPattern =
       Pattern.compile("jdbc:" + DRIVER_PROTOCOL + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
   private static final String JDBC_PREFIX = "jdbc";

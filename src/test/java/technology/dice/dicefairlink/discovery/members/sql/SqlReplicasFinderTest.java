@@ -64,7 +64,7 @@ public class SqlReplicasFinderTest {
     MySQLReplicasFinder underTest =
         new MySQLReplicasFinder(
             new FairlinkConnectionString(
-                mysql.getJdbcUrl().replace("mysql", "auroraro:mysql"), this.baseTestProperties()),
+                mysql.getJdbcUrl().replace("mysql", "fairlink:mysql"), this.baseTestProperties()),
             mysql.getJdbcDriverInstance(),
             mysql.getDatabaseName());
     final ClusterInfo clusterInfo = underTest.discoverCluster();
@@ -77,7 +77,7 @@ public class SqlReplicasFinderTest {
     MySQLReplicasFinder underTest =
         new MySQLReplicasFinder(
             new FairlinkConnectionString(
-                mysql.getJdbcUrl().replace("mysql", "auroraro:mysql"), this.baseTestProperties()),
+                mysql.getJdbcUrl().replace("mysql", "fairlink:mysql"), this.baseTestProperties()),
             mysql.getJdbcDriverInstance(),
             mysql.getDatabaseName());
     final ClusterInfo actual = underTest.discoverCluster();
@@ -92,7 +92,7 @@ public class SqlReplicasFinderTest {
     MySQLReplicasFinder underTest =
         new MySQLReplicasFinder(
             new FairlinkConnectionString(
-                mysql.getJdbcUrl().replace("mysql", "auroraro:fairlinktestdriver"),
+                mysql.getJdbcUrl().replace("mysql", "fairlink:fairlinktestdriver"),
                 this.baseTestProperties()),
             mysql.getJdbcDriverInstance(),
             mysql.getDatabaseName());
@@ -109,7 +109,7 @@ public class SqlReplicasFinderTest {
     MySQLReplicasFinder underTest =
         new MySQLReplicasFinder(
             new FairlinkConnectionString(
-                mysql.getJdbcUrl().replace("mysql", "auroraro:mysql"), this.baseTestProperties()),
+                mysql.getJdbcUrl().replace("mysql", "fairlink:mysql"), this.baseTestProperties()),
             mysql.getJdbcDriverInstance(),
             "i_do_not_exist");
     final ClusterInfo actual = underTest.discoverCluster();

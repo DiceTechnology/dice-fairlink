@@ -162,7 +162,7 @@ public class AuroraReadReplicasDriverEndToEndTest {
     List<Data> foundData = new ArrayList();
     Connection connect =
         underTest.connect(
-            master.getJdbcUrl().replace("mysql", "auroraro:mysql"), this.baseTestProperties());
+            master.getJdbcUrl().replace("mysql", "fairlink:mysql"), this.baseTestProperties());
     ResultSet resultSet = connect.createStatement().executeQuery("SELECT * FROM data");
     while (resultSet.next()) {
       Data data = new Data(resultSet.getString("a"), resultSet.getString("b"));
@@ -172,7 +172,7 @@ public class AuroraReadReplicasDriverEndToEndTest {
     resultSet.close();
     connect =
         underTest.connect(
-            master.getJdbcUrl().replace("mysql", "auroraro:mysql"), this.baseTestProperties());
+            master.getJdbcUrl().replace("mysql", "fairlink:mysql"), this.baseTestProperties());
     resultSet = connect.createStatement().executeQuery("SELECT * FROM data");
     while (resultSet.next()) {
       Data data = new Data(resultSet.getString("a"), resultSet.getString("b"));
