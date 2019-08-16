@@ -49,8 +49,7 @@ public class MySQLReplicasFinder implements MemberFinderMethod {
       while (resultSet.next()) {
         instances.add(
             new DatabaseInstance(
-                DatabaseInstanceRole.valueOf(
-                    DatabaseInstanceRole.class, resultSet.getString("role")),
+                DatabaseInstanceRole.valueOf(resultSet.getString("role")),
                 resultSet.getString("server_id")));
       }
     } catch (Exception e) {
