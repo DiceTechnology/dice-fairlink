@@ -1,4 +1,4 @@
-package technology.dice.dicefairlink.support.discovery.members;
+package technology.dice.dicefairlink.discovery.members;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -7,9 +7,10 @@ import org.junit.Before;
 import org.junit.Test;
 import technology.dice.dicefairlink.StepByStepExecutor;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.discovery.members.FairlinkMemberFinder;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 import technology.dice.dicefairlink.iterators.SizedIterator;
+import technology.dice.dicefairlink.support.discovery.members.FailingReplicasFinder;
+import technology.dice.dicefairlink.support.discovery.members.FixedSetReplicasFinder;
 import technology.dice.dicefairlink.support.discovery.tags.FailingExcludedReplicasFinder;
 import technology.dice.dicefairlink.support.discovery.tags.FixedSetExcludedReplicasFinder;
 import technology.dice.dicefairlink.support.iterators.TestCyclicIterator;
@@ -62,7 +63,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableList.of()),
@@ -80,12 +81,36 @@ public class FairlinkMemberFinderTest {
   }
 
   @Test
+  public void excludesMalformedHosts() throws URISyntaxException {
+    FairlinkMemberFinder underTest =
+        new FairlinkMemberFinder(
+            new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
+                this.baseTestProperties()),
+            this.exclusionTagsExecutor,
+            new FixedSetExcludedReplicasFinder(ImmutableList.of()),
+            new FixedSetReplicasFinder(
+                "my-fallback.domain.com", ImmutableSet.of("r1", "<>±±://", "r2")),
+            strings -> TestCyclicIterator.of(strings),
+            (host, properties) -> true);
+    this.exclusionTagsExecutor.step();
+    final SizedIterator<String> result = underTest.discoverReplicas();
+
+    Assert.assertTrue(result instanceof TestCyclicIterator);
+    Assert.assertEquals(2, result.size());
+    Assert.assertEquals(
+        this.addDomain(ImmutableSet.of("r1", "r2"), this.baseTestProperties()),
+        ((TestCyclicIterator) result).getElements());
+  }
+
+  @Test
   public void exclusions() throws URISyntaxException {
     FairlinkMemberFinder underTest =
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3")),
@@ -110,7 +135,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableSet.of()),
@@ -142,7 +167,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableSet.of()),
@@ -177,7 +202,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableSet.of()),
@@ -210,7 +235,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             exclusionsFinder,
@@ -245,7 +270,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableList.of()),
@@ -264,7 +289,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableList.of()),
@@ -294,7 +319,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:auroraro:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FailingExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3"), 1),
