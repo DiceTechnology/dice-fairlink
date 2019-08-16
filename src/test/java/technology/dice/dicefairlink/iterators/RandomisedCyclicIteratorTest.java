@@ -32,11 +32,6 @@ public class RandomisedCyclicIteratorTest {
   @Before
   public void setUp() {
     numberOfElementsToTest = ThreadLocalRandom.current().nextInt(MIN_SIZE, MAX_SIZE);
-    System.out.println(
-        "Running test "
-            + testName.getMethodName()
-            + " with numberOfElementsToTest = "
-            + numberOfElementsToTest);
   }
 
   @Test(expected = NoSuchElementException.class)

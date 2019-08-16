@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -25,14 +26,17 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class FairlinkMemberFinder {
-  private static final ExclusionTag EXCLUSION_TAG = new ExclusionTag("Fairlink-Exclude", "true");
   private static final Logger LOGGER = Logger.getLogger(FairlinkMemberFinder.class.getName());
+  private static final ExclusionTag EXCLUSION_TAG = new ExclusionTag("Fairlink-Exclude", "true");
+  private static final Set<String> EMPTY_SET = new HashSet<>(0);
+
   private final FairlinkConfiguration fairlinkConfiguration;
   private final MemberFinderMethod memberFinder;
   private final ReplicaValidator replicaValidator;
   private final Function<Collection<String>, SizedIterator<String>> iteratorBuilder;
   protected final FairlinkConnectionString fairlinkConnectionString;
   protected final TagFilter tagFilter;
+  protected Optional<String> fallbackEndpoint = Optional.empty();
   protected Collection<String> excludedInstanceIds = new HashSet<>(0);
 
   public FairlinkMemberFinder(
@@ -52,41 +56,78 @@ public class FairlinkMemberFinder {
     this.iteratorBuilder = stringSizedIteratorBuilder;
     LOGGER.info("Starting excluded members discovery with " + startJitter + " delay.");
     tagsPollingExecutor.scheduleAtFixedRate(
-        () -> excludedInstanceIds = tagFilter.listExcludedInstances(EXCLUSION_TAG),
+        () -> excludedInstanceIds = safeExclusionsDiscovery(),
         startJitter.getSeconds(),
         fairlinkConfiguration.getTagsPollerInterval().getSeconds(),
         TimeUnit.SECONDS);
   }
 
+  private Set<String> safeExclusionsDiscovery() {
+    try {
+      return tagFilter.listExcludedInstances(EXCLUSION_TAG);
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.SEVERE, "Could not discover exclusions; including all discovered instances", e);
+      return EMPTY_SET;
+    }
+  }
+
   public final SizedIterator<String> discoverReplicas() {
-    long before = System.currentTimeMillis();
-    final ClusterInfo clusterInfo = this.memberFinder.discoverCluster();
-    final Set<String> filteredReplicas =
-        clusterInfo.getReplicas().stream()
-            .filter(
-                dbIdentifier ->
-                    (!this.fairlinkConfiguration.isValidateConnection())
-                        || this.validate(fairlinkConfiguration.hostname(dbIdentifier)))
-            .filter(db -> !excludedInstanceIds.contains(db))
-            .map(dbIdentifier -> fairlinkConfiguration.hostname(dbIdentifier))
-            .collect(Collectors.toSet());
-    final SizedIterator<String> result =
-        filteredReplicas.isEmpty()
-            ? this.iteratorBuilder.apply(this.setOf(clusterInfo.getReadonlyEndpoint()))
-            : this.iteratorBuilder.apply(filteredReplicas);
-    long after = System.currentTimeMillis();
-    LOGGER.info(
-        "Updated list of replicas in "
-            + (after - before)
-            + " ms. Found "
-            + filteredReplicas.size()
-            + " good, active, non-excluded replica"
-            + (filteredReplicas.size() != 1 ? "s" : "")
-            + " (validation "
-            + (fairlinkConfiguration.isValidateConnection() ? "" : "NOT ")
-            + "done). Next update in "
-            + this.fairlinkConfiguration.getReplicaPollInterval());
-    return result;
+    try {
+      long before = System.currentTimeMillis();
+      final ClusterInfo clusterInfo = this.memberFinder.discoverCluster();
+      this.fallbackEndpoint = Optional.of(clusterInfo.getReadonlyEndpoint());
+      final Set<String> filteredReplicas =
+          clusterInfo.getReplicas().stream()
+              .filter(db -> !excludedInstanceIds.contains(db))
+              .filter(
+                  dbIdentifier ->
+                      (!this.fairlinkConfiguration.isValidateConnection())
+                          || this.validate(fairlinkConfiguration.hostname(dbIdentifier)))
+              .map(dbIdentifier -> fairlinkConfiguration.hostname(dbIdentifier))
+              .collect(Collectors.toSet());
+      final SizedIterator<String> result =
+          filteredReplicas.isEmpty()
+              ? this.iteratorBuilder.apply(this.setOf(clusterInfo.getReadonlyEndpoint()))
+              : this.iteratorBuilder.apply(filteredReplicas);
+      long after = System.currentTimeMillis();
+      LOGGER.info(
+          "Updated list of replicas in "
+              + (after - before)
+              + " ms. Found "
+              + filteredReplicas.size()
+              + " good, active, non-excluded replica"
+              + (filteredReplicas.size() != 1 ? "s" : "")
+              + " (validation "
+              + (fairlinkConfiguration.isValidateConnection() ? "" : "NOT ")
+              + "done). Excluded "
+              + this.excludedInstanceIds.size()
+              + " instances. Next update in "
+              + this.fairlinkConfiguration.getReplicaPollInterval());
+      return result;
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.WARNING,
+          "Error discovering cluster identified by ["
+              + this.fairlinkConnectionString.getFairlinkUri()
+              + "]. Will return fallback endpoint"
+              + this.fallbackEndpoint
+              + " if available",
+          e);
+      if (!this.fallbackEndpoint.isPresent()) {
+        LOGGER.log(
+            Level.SEVERE,
+            "Fallback endpoint not available. This means the cluster has never been successfully discovered. This is probably a permanent error condition");
+      }
+      return fallbackEndpoint
+          .map(fallbackEndpoint -> this.iteratorBuilder.apply(this.setOf(fallbackEndpoint)))
+          .orElseThrow(
+              () ->
+                  new RuntimeException(
+                      "Could not discover cluster identified by ["
+                          + fairlinkConnectionString.getFairlinkUri()
+                          + "] and a fallback reader endpoint is not available"));
+    }
   }
 
   private Set<String> setOf(String entry) {
@@ -106,7 +147,7 @@ public class FairlinkMemberFinder {
   }
 
   public final Iterator<String> init() {
-    this.excludedInstanceIds = this.tagFilter.listExcludedInstances(EXCLUSION_TAG);
+    this.excludedInstanceIds = safeExclusionsDiscovery();
     final SizedIterator<String> replicasIterator = this.discoverReplicas();
     LOGGER.log(
         Level.INFO,
