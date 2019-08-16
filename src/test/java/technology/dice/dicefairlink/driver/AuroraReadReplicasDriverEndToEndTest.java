@@ -10,7 +10,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.testcontainers.containers.MySQLContainer;
 import technology.dice.dicefairlink.StepByStepExecutor;
 import technology.dice.dicefairlink.discovery.members.sql.SqlReplicasFinderTest;
@@ -31,10 +30,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 public class AuroraReadReplicasDriverEndToEndTest {
   @Rule public MySQLContainer master = new MySQLContainer();
@@ -66,14 +61,6 @@ public class AuroraReadReplicasDriverEndToEndTest {
 
   @Before
   public void before() throws IOException, SQLException {
-    SLF4JBridgeHandler.removeHandlersForRootLogger();
-    SLF4JBridgeHandler.install();
-    Logger rootLogger = LogManager.getLogManager().getLogger("");
-    rootLogger.setLevel(Level.FINEST);
-    for (Handler h : rootLogger.getHandlers()) {
-      h.setLevel(Level.INFO);
-    }
-
     this.runScript(master, "technology/dice/dicefairlink/discovery/members/sql/schema.sql");
     this.runScript(slave1, "technology/dice/dicefairlink/discovery/members/sql/schema.sql");
     this.runScript(slave2, "technology/dice/dicefairlink/discovery/members/sql/schema.sql");
