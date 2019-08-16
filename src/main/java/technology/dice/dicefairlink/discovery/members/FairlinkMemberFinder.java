@@ -102,7 +102,9 @@ public class FairlinkMemberFinder {
               + (fairlinkConfiguration.isValidateConnection() ? "" : "NOT ")
               + "done). Excluded "
               + this.excludedInstanceIds.size()
-              + " instances. Next update in "
+              + " instance"
+              + (this.excludedInstanceIds.size() != 1 ? "" : "s")
+              + ". Next update in "
               + this.fairlinkConfiguration.getReplicaPollInterval());
       return result;
     } catch (Exception e) {
