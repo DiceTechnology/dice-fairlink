@@ -15,7 +15,6 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,7 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class FairlinkMemberFinder {
+public class FairlinkMemberFinder implements MemberFinder {
   private static final Logger LOGGER = Logger.getLogger(FairlinkMemberFinder.class.getName());
   private static final ExclusionTag EXCLUSION_TAG = new ExclusionTag("Fairlink-Exclude", "true");
   private static final Set<String> EMPTY_SET = new HashSet<>(0);
@@ -152,7 +151,7 @@ public class FairlinkMemberFinder {
     }
   }
 
-  public final Iterator<String> init() {
+  public final SizedIterator<String> init() {
     this.excludedInstanceIds = safeExclusionsDiscovery();
     final SizedIterator<String> replicasIterator = this.discoverReplicas();
     LOGGER.log(
