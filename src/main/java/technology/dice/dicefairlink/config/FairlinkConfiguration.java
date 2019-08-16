@@ -111,19 +111,21 @@ public class FairlinkConfiguration {
   }
 
   private Region resolveRegion(final Properties properties) {
-    final String propertyRegion = properties.getProperty(CLUSTER_REGION);
+    final Optional<String> propertyRegion =
+        Optional.ofNullable(properties.getProperty(CLUSTER_REGION));
     LOGGER.log(Level.FINE, "Region from property: {0}", propertyRegion);
-    if (propertyRegion != null) {
-      return Region.of(propertyRegion);
-    }
-
-    final String envRegion = this.env.get("AWS_DEFAULT_REGION");
-    LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
-    if (envRegion != null) {
-      return Region.of(envRegion);
-    }
-    throw new IllegalStateException(
-        "Region is mandatory for exclusion tag discovery and replica discovery on AWS_API mode");
+    return propertyRegion
+        .map(r -> Region.of(r))
+        .orElseGet(
+            () -> {
+              final String envRegion = env.get("AWS_DEFAULT_REGION");
+              LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
+              if (envRegion != null) {
+                return Region.of(envRegion);
+              }
+              throw new IllegalStateException(
+                  "Region is mandatory for exclusion tag discovery and replica discovery on AWS_API mode");
+            });
   }
 
   private Duration resolvePollerInterval(Properties properties) {
