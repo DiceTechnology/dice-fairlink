@@ -195,7 +195,11 @@ public class AuroraReadReplicasDriver implements Driver {
 
       return Optional.of(
           new ParsedUrl(fairlinkConnectionString.getDelegateProtocol(), delegatedReplicaUri));
-    } catch (URISyntaxException | NoSuchElementException | IllegalArgumentException e) {
+
+    } catch (URISyntaxException e) {
+      LOGGER.log(Level.FINE, "Can not get replicas for cluster URI: " + url, e);
+      return Optional.empty();
+    } catch (NoSuchElementException | IllegalArgumentException e) {
       LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + url, e);
       return Optional.empty();
     }
