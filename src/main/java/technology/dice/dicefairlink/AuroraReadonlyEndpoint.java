@@ -6,10 +6,10 @@
 package technology.dice.dicefairlink;
 
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.discovery.members.FairlinkMemberFinder;
+import technology.dice.dicefairlink.discovery.members.MemberFinder;
+import technology.dice.dicefairlink.iterators.SizedIterator;
 
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,12 +18,12 @@ import java.util.logging.Logger;
 
 public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
-  private Iterator<String> replicas;
+  private SizedIterator<String> replicas;
   private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
   public AuroraReadonlyEndpoint(
       FairlinkConfiguration fairlinkConfiguration,
-      FairlinkMemberFinder fairlinkMemberFinder,
+      MemberFinder fairlinkMemberFinder,
       ScheduledExecutorService replicaDiscoveryExecutor) {
 
     replicas = fairlinkMemberFinder.init();
@@ -39,7 +39,7 @@ public class AuroraReadonlyEndpoint {
   public String getNextReplica() {
     String nextReplica = replicas.next();
     LOGGER.finer("Obtained replica: " + nextReplica);
-    if (nextReplica != null && nextReplica.equals(lastReplica.get())) {
+    if (nextReplica != null && nextReplica.equals(lastReplica.get()) && replicas.size() > 1) {
       nextReplica = replicas.next();
     }
     lastReplica.set(nextReplica);
