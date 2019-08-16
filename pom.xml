@@ -190,12 +190,14 @@
 				</configuration>
 				<executions>
 					<execution>
+						<id>verify</id>
 						<phase>verify</phase>
 						<goals>
 							<goal>check</goal>
 						</goals>
 					</execution>
 					<execution>
+						<id>test</id>
 						<phase>test</phase>
 						<goals>
 							<goal>check</goal>
@@ -286,27 +288,6 @@
 					<url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
 				</pluginRepository>
 			</pluginRepositories>
-			<build>
-				<plugins>
-					<!-- Commented out due to limitation of only one encrypted file in Travis.
-					TODO: move to tar archive of all required files, which will be encrypted as a
-					single file and then it's contents shall be extrated after decryption (in .travis.yml)   -->
-					<!--                    <plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<version>1.6</version>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>-->
-				</plugins>
-			</build>
 		</profile>
 	</profiles>
 </project>
