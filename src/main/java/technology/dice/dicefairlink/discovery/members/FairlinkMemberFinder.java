@@ -124,11 +124,15 @@ public class FairlinkMemberFinder {
       return fallbackEndpoint
           .map(fallbackEndpoint -> this.iteratorBuilder.apply(this.setOf(fallbackEndpoint)))
           .orElseThrow(
-              () ->
-                  new RuntimeException(
-                      "Could not discover cluster identified by ["
-                          + fairlinkConnectionString.getFairlinkUri()
-                          + "] and a fallback reader endpoint is not available"));
+              () -> {
+                LOGGER.log(
+                    Level.SEVERE,
+                    "Fallback endpoint not available. This means the cluster has never been successfully discovered. This is probably a permanent error condition");
+                return new RuntimeException(
+                    "Could not discover cluster identified by ["
+                        + fairlinkConnectionString.getFairlinkUri()
+                        + "] and a fallback reader endpoint is not available");
+              });
     }
   }
 
