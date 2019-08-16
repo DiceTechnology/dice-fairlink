@@ -94,4 +94,9 @@ public class AuroraReadReplicasDriverTest {
     Assert.assertNull(
         underTest.connect("jdbc:fairlinktestdriver://host:3306/id?useSSL=false", new Properties()));
   }
+
+  @Test
+  public void staticLoad() throws ClassNotFoundException {
+    Class.forName(AuroraReadReplicasDriver.class.getCanonicalName());
+  }
 }
