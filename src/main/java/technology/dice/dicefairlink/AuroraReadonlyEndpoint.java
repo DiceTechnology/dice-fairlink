@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AuroraReadonlyEndpoint {
@@ -27,7 +28,7 @@ public class AuroraReadonlyEndpoint {
 
     replicas = fairlinkMemberFinder.init();
     final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
-    LOGGER.info("Starting cluster member discovery with " + startJitter + " delay.");
+    LOGGER.log(Level.INFO, "Starting cluster member discovery with {} delay.", startJitter);
     replicaDiscoveryExecutor.scheduleAtFixedRate(
         () -> replicas = fairlinkMemberFinder.discoverReplicas(),
         fairlinkConfiguration.getReplicaPollInterval().plus(startJitter).getSeconds(),
