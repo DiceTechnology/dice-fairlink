@@ -188,7 +188,7 @@ public class FairlinkConfiguration {
   }
 
   public boolean isDiscoveryModeValidForDelegate(String delegateProtocol) {
-    return this.getReplicasDiscoveryMode() == ReplicasDiscoveryMode.SQL_MYSQL
-        && !delegateProtocol.equalsIgnoreCase(MYSQL);
+    return this.getReplicasDiscoveryMode() != ReplicasDiscoveryMode.SQL_MYSQL
+        || delegateProtocol.equalsIgnoreCase(MYSQL);
   }
 }
