@@ -14,7 +14,7 @@ import technology.dice.dicefairlink.discovery.members.JdbcConnectionValidator;
 import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
 import technology.dice.dicefairlink.discovery.members.ReplicaValidator;
 import technology.dice.dicefairlink.discovery.members.awsapi.AwsApiReplicasFinder;
-import technology.dice.dicefairlink.discovery.members.sql.SqlReplicasFinder;
+import technology.dice.dicefairlink.discovery.members.sql.MySQLReplicasFinder;
 import technology.dice.dicefairlink.discovery.tags.TagFilter;
 import technology.dice.dicefairlink.discovery.tags.awsapi.ResourceGroupApiTagDiscovery;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
@@ -100,14 +100,13 @@ public class AuroraReadReplicasDriver implements Driver {
   @Override
   public Connection connect(final String url, final Properties properties) throws SQLException {
     final Optional<ParsedUrl> parsedUrlOptional = parseUrlAndCacheDriver(url, properties);
-    final ParsedUrl parsedUrl =
-        parsedUrlOptional.orElseThrow(
-            () -> new SQLException(String.format("Invalid url: [%s]", url)));
-    // TODO if our info about replica is wrong (say, instance is down), then following 'connect'
-    // will throw, and we must re-query Aurora Cluster and try again once.
+
+    if (!parsedUrlOptional.isPresent()) {
+      return null;
+    }
     return delegates
-        .get(parsedUrl.getDelegateProtocol())
-        .connect(parsedUrl.getDelegateUrl(), properties);
+        .get(parsedUrlOptional.get().getDelegateProtocol())
+        .connect(parsedUrlOptional.get().getDelegateUrl(), properties);
   }
 
   /** {@inheritDoc} */
@@ -167,7 +166,9 @@ public class AuroraReadReplicasDriver implements Driver {
             new AuroraReadonlyEndpoint(
                 fairlinkConfiguration,
                 this.fairlinkMemberFinder.orElseGet(
-                    () -> memberFinder(fairlinkConnectionString, fairlinkConfiguration)),
+                    () ->
+                        newMemberFinder(
+                            fairlinkConnectionString, fairlinkConfiguration, properties)),
                 this.discoveryExecutor.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
@@ -200,33 +201,39 @@ public class AuroraReadReplicasDriver implements Driver {
     }
   }
 
-  private FairlinkMemberFinder memberFinder(
+  private FairlinkMemberFinder newMemberFinder(
       FairlinkConnectionString fairlinkConnectionString,
-      FairlinkConfiguration fairlinkConfiguration) {
+      FairlinkConfiguration fairlinkConfiguration,
+      Properties properties) {
     return new FairlinkMemberFinder(
         fairlinkConfiguration,
         fairlinkConnectionString,
         this.tagPollExecutor.get(),
         this.tagFilter.orElseGet(() -> new ResourceGroupApiTagDiscovery(fairlinkConfiguration)),
-        this.memberFinderMethod(
+        this.newMemberFinderMethod(
             fairlinkConfiguration,
             fairlinkConnectionString,
-            this.delegates.get(fairlinkConnectionString.getDelegateProtocol())),
+            this.delegates.get(fairlinkConnectionString.getDelegateProtocol()),
+            properties),
         this.sizedIteratorBuilder.orElse(strings -> RandomisedCyclicIterator.of(strings)),
         this.replicaValidator.orElse(
             new JdbcConnectionValidator(
                 this.delegates.get(fairlinkConnectionString.getDelegateProtocol()))));
   }
 
-  private MemberFinderMethod memberFinderMethod(
+  private MemberFinderMethod newMemberFinderMethod(
       FairlinkConfiguration fairlinkConfiguration,
       FairlinkConnectionString fairlinkConnectionString,
-      Driver driver) {
+      Driver driver,
+      Properties properties) {
     switch (fairlinkConfiguration.getReplicasDiscoveryMode()) {
       case AWS_API:
         return new AwsApiReplicasFinder(fairlinkConfiguration, fairlinkConnectionString);
       case SQL_MYSQL:
-        return new SqlReplicasFinder(fairlinkConnectionString, driver);
+        return new MySQLReplicasFinder(
+            fairlinkConnectionString,
+            driver,
+            properties.getProperty("_fairlinkMySQLSchemaOverride"));
       default:
         throw new IllegalArgumentException(
             fairlinkConfiguration.getReplicasDiscoveryMode().name()

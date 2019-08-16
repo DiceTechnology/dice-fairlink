@@ -15,10 +15,6 @@ public class CyclicIterator<T> implements SizedIterator<T> {
     this.iterator = this.elements.iterator();
   }
 
-  public static <T> CyclicIterator<T> of(Collection<? extends T> collection) {
-    return new CyclicIterator<>(collection);
-  }
-
   @Override
   public boolean hasNext() {
     return !elements.isEmpty();

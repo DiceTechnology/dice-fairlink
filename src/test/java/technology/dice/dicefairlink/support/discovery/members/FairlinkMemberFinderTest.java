@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FairlinkMemberFinderTest {
-  StepByStepExecutor exclusionTagsExecutor;
+  private StepByStepExecutor exclusionTagsExecutor;
 
   private Properties baseTestProperties() {
     Properties p = new Properties();
@@ -216,7 +216,7 @@ public class FairlinkMemberFinderTest {
             exclusionsFinder,
             new FixedSetReplicasFinder(
                 "my-fallback.domain.com",
-                ImmutableList.of("replica1", "replica2", "replica3", "replica4")),
+                ImmutableSet.of("replica1", "replica2", "replica3", "replica4")),
             strings -> TestCyclicIterator.of(strings),
             (host, properties) -> true);
     this.exclusionTagsExecutor.step();

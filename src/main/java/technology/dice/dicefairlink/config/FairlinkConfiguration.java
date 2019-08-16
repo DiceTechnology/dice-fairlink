@@ -30,7 +30,7 @@ public class FairlinkConfiguration {
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private static final Duration DEFAULT_TAG_POLL_INTERVAL = Duration.ofMinutes(2);
   private static final String MYSQL = "mysql";
-  private final Optional<Region> auroraClusterRegion;
+  private final Region auroraClusterRegion;
   private final Optional<String> replicaEndpointTemplate;
   private final AwsCredentialsProvider awsCredentialsProvider;
   private final Duration replicaPollInterval;
@@ -71,17 +71,11 @@ public class FairlinkConfiguration {
         () ->
             new IllegalStateException(
                 "Replica endpoint template mandatory. It is used for tag exclusion discovery and if an SQL discovery mode is selected"));
-
-    this.auroraClusterRegion.orElseThrow(
-        () -> new IllegalStateException("Region is mandatory for exclusion tag discovery"));
   }
 
   private void validateSqlDiscovery() {}
 
-  private void validateAwsApiDiscovery() {
-    this.auroraClusterRegion.orElseThrow(
-        () -> new IllegalStateException("Region is mandatory for AWS API discovery mode"));
-  }
+  private void validateAwsApiDiscovery() {}
 
   private ReplicasDiscoveryMode resolveDiscoveryMode(Properties properties) {
     return ReplicasDiscoveryMode.fromStringInsensitive(
@@ -116,19 +110,20 @@ public class FairlinkConfiguration {
     }
   }
 
-  private Optional<Region> resolveRegion(final Properties properties) {
+  private Region resolveRegion(final Properties properties) {
     final String propertyRegion = properties.getProperty(CLUSTER_REGION);
     LOGGER.log(Level.FINE, "Region from property: {0}", propertyRegion);
     if (propertyRegion != null) {
-      return Optional.of(Region.of(propertyRegion));
+      return Region.of(propertyRegion);
     }
 
     final String envRegion = this.env.get("AWS_DEFAULT_REGION");
     LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
     if (envRegion != null) {
-      return Optional.of(Region.of(envRegion));
+      return Region.of(envRegion);
     }
-    return Optional.empty();
+    throw new IllegalStateException(
+        "Region is mandatory for exclusion tag discovery and replica discovery on AWS_API mode");
   }
 
   private Duration resolvePollerInterval(Properties properties) {
@@ -153,7 +148,7 @@ public class FairlinkConfiguration {
           String.format(
               "No or invalid tags polling interval specified. Using default tags poll interval of %s",
               DEFAULT_TAG_POLL_INTERVAL));
-      return DEFAULT_POLLER_INTERVAL;
+      return DEFAULT_TAG_POLL_INTERVAL;
     }
   }
 
@@ -175,7 +170,7 @@ public class FairlinkConfiguration {
   }
 
   public Region getAuroraClusterRegion() {
-    return auroraClusterRegion.get();
+    return auroraClusterRegion;
   }
 
   public String hostname(String fromDbIdentifier) {

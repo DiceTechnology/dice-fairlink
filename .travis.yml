@@ -1,30 +1,32 @@
 ﻿language: java
 jdk:
-- openjdk8
+  - openjdk8
 
 sudo: false
 
+services:
+  - docker
+
 branches:
   only:
-  - master
-  - "/^feature.*$/"
-  - "/^issue.*$/"
-  - "/^hotfix.*$/"
+    - master
+    - "/^feature.*$/"
+    - "/^issue.*$/"
+    - "/^hotfix.*$/"
 
 before_script:
-- "./bin/version.sh"
+  - "./bin/version.sh"
 
 script:
-- mvn clean install -q || travis_terminate 1
+  - mvn clean install -q || travis_terminate 1
 
 before_install:
-- openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
-  -in github.pem.enc -out ~/github.pem -d
-- chmod 600 ~/github.pem
-- eval "$(ssh-agent)"
-- ssh-add ~/github.pem
-- git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
-#- gpg --import travis.gpg.pem
+  - openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
+    -in github.pem.enc -out ~/github.pem -d
+  - chmod 600 ~/github.pem
+  - eval "$(ssh-agent)"
+  - ssh-add ~/github.pem
+  - git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
 
 env:
   global:
@@ -33,31 +35,31 @@ env:
 
 cache:
   directories:
-  - "~/.m2/repository"
+    - "~/.m2/repository"
 
 after_success:
- #
+#
 
 deploy:
-- provider: script
-  script: "./bin/version.sh"
-  skip_cleanup: true
-  on:
-    branch: master
-- provider: script
-  script: "./bin/tag.sh"
-  skip_cleanup: true
-  on:
-    branch: master
-- provider: script
-  script: "./cd/deploy.sh"
-  skip_cleanup: true
-  on:
-    branch: master
+  - provider: script
+    script: "./bin/version.sh"
+    skip_cleanup: true
+    on:
+      branch: master
+  - provider: script
+    script: "./bin/tag.sh"
+    skip_cleanup: true
+    on:
+      branch: master
+  - provider: script
+    script: "./cd/deploy.sh"
+    skip_cleanup: true
+    on:
+      branch: master
 
 notifications:
   slack:
     on_success: never
     on_failure: always
     rooms:
-    - dicetechnology: $encrypted_SLACK_ROOM_API_KEY
+      - dicetechnology: $encrypted_SLACK_ROOM_API_KEY

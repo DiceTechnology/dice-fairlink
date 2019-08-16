@@ -5,13 +5,14 @@
  */
 package technology.dice.dicefairlink.discovery.members;
 
-import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
 
 public final class ClusterInfo {
   private final String readonlyEndpoint;
-  private final Collection<String> replicas;
+  private final Set<String> replicas;
 
-  public ClusterInfo(String readonlyEndpoint, Collection<String> replicas) {
+  public ClusterInfo(String readonlyEndpoint, Set<String> replicas) {
     if ("".equals(readonlyEndpoint) || readonlyEndpoint == null) {
       throw new IllegalArgumentException("Read only endpoint must not be null");
     }
@@ -26,7 +27,25 @@ public final class ClusterInfo {
     return readonlyEndpoint;
   }
 
-  public Collection<String> getReplicas() {
+  public Set<String> getReplicas() {
     return replicas;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ClusterInfo)) {
+      return false;
+    }
+    ClusterInfo that = (ClusterInfo) o;
+    return Objects.equals(getReadonlyEndpoint(), that.getReadonlyEndpoint())
+        && Objects.equals(getReplicas(), that.getReplicas());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getReadonlyEndpoint(), getReplicas());
   }
 }

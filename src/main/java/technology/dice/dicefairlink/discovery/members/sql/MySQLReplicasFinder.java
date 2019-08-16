@@ -8,41 +8,50 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.ResultSet;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class SqlReplicasFinder implements MemberFinderMethod {
-  private static final Logger LOGGER = Logger.getLogger(SqlReplicasFinder.class.getName());
+public class MySQLReplicasFinder implements MemberFinderMethod {
+  private static final Logger LOGGER = Logger.getLogger(MySQLReplicasFinder.class.getName());
   private static final Set<DatabaseInstance> EMPTY_SET = new HashSet<>(0);
-  private final String FIND_NODES_QUERY =
-      "select server_id, if(session_id = 'MASTER_SESSION_ID',"
+  private static final String DEFAULT_INFORMATION_SCHEMA_NAME = "information_schema";
+  private static final String FIND_NODES_QUERY_TEMPLATE =
+      "select server_id, if(session_id =    'MASTER_SESSION_ID',"
           + "'WRITER', 'READER') as role from "
-          + "information_schema.replica_host_status;";
+          + "%s.replica_host_status;";
   private final Driver driverForDelegate;
   private final FairlinkConnectionString fairlinkConnectionString;
+  private final String informationSchemaName;
 
-  public SqlReplicasFinder(
-      FairlinkConnectionString fairlinkConnectionString, Driver driverForDelegate) {
+  public MySQLReplicasFinder(
+      FairlinkConnectionString fairlinkConnectionString,
+      Driver driverForDelegate,
+      String informationSchemaName) {
     this.driverForDelegate = driverForDelegate;
     this.fairlinkConnectionString = fairlinkConnectionString;
+    this.informationSchemaName =
+        Optional.ofNullable(informationSchemaName).orElse(DEFAULT_INFORMATION_SCHEMA_NAME);
   }
 
   protected Set<DatabaseInstance> findReplicas() {
     Set<DatabaseInstance> instances = new HashSet<>();
     try (final Connection c =
-        this.driverForDelegate.connect(
-            fairlinkConnectionString.delegateConnectionString(),
-            fairlinkConnectionString.getProperties())) {
-      try (final ResultSet resultSet = c.createStatement().executeQuery(FIND_NODES_QUERY)) {
-        while (resultSet.next()) {
-          instances.add(
-              new DatabaseInstance(
-                  DatabaseInstanceRole.valueOf(
-                      DatabaseInstanceRole.class, resultSet.getString("role")),
-                  resultSet.getString("server_id")));
-        }
+            this.driverForDelegate.connect(
+                fairlinkConnectionString.delegateConnectionString(),
+                fairlinkConnectionString.getProperties());
+        final ResultSet resultSet =
+            c.createStatement()
+                .executeQuery(
+                    String.format(FIND_NODES_QUERY_TEMPLATE, this.informationSchemaName))) {
+      while (resultSet.next()) {
+        instances.add(
+            new DatabaseInstance(
+                DatabaseInstanceRole.valueOf(
+                    DatabaseInstanceRole.class, resultSet.getString("role")),
+                resultSet.getString("server_id")));
       }
     } catch (Exception e) {
       LOGGER.log(
