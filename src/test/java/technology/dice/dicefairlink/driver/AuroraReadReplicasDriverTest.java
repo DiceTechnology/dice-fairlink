@@ -14,6 +14,7 @@ import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.logging.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,6 +35,7 @@ public class AuroraReadReplicasDriverTest {
     Assert.assertEquals(0, underTest.getMinorVersion());
     Assert.assertArrayEquals(
         new DriverPropertyInfo[] {}, underTest.getPropertyInfo(VALID_JDBC_URL, new Properties()));
+    Assert.assertEquals(Logger.getLogger(""), underTest.getParentLogger());
   }
 
   @Test
