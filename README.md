@@ -117,7 +117,7 @@ When using the `AWS API` discovery mode, the `host` part of the connection strin
 If your cluster uses the `MySQL` engine, it is recommended to use the `MySQL` discovery mode, as it is gentler on the AWS API.
 
 ## MySQL Mode
-dice-fairlink uses the `information_schema.replica_host_status` table available on Aurora MySQL clusters to list the members of a given cluster. 
+dice-fairlink uses the `information_schema.replica_host_status` table available on Aurora MySQL clusters to list the members of a given cluster. The credentials on the connection string, or on the driver properties will be used.
 
 This discovery mode does not require any special IAM user permissions. 
 
@@ -236,7 +236,7 @@ dice-fairlink's dependencies are not transitive, and depends only on three `prov
 </dependency>
 ```
 
-Any version compatibl with `2.7.23` will work.
+Any version compatible with `2.7.23` will work.
 
 Additionally, the jdbc driver for the underlaying protocol must be available at runtime (usually loaded via SPI).
 
