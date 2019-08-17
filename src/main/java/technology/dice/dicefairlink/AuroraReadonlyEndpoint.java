@@ -28,7 +28,7 @@ public class AuroraReadonlyEndpoint {
 
     replicas = fairlinkMemberFinder.init();
     final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
-    LOGGER.log(Level.INFO, "Starting cluster member discovery with {} delay.", startJitter);
+    LOGGER.log(Level.INFO, "Starting cluster member discovery with {0} delay.", startJitter);
     replicaDiscoveryExecutor.scheduleAtFixedRate(
         () -> replicas = fairlinkMemberFinder.discoverReplicas(),
         fairlinkConfiguration.getReplicaPollInterval().plus(startJitter).getSeconds(),
