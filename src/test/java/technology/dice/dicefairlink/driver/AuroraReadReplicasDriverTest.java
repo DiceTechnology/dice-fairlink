@@ -117,6 +117,12 @@ public class AuroraReadReplicasDriverTest {
   }
 
   @Test
+  public void testMalformedUrl() throws Exception {
+    AuroraReadReplicasDriver underTest = new AuroraReadReplicasDriver();
+    Assert.assertNull(underTest.connect("<>%%ad", new Properties()));
+  }
+
+  @Test
   public void staticLoad() throws ClassNotFoundException {
     Class.forName(AuroraReadReplicasDriver.class.getCanonicalName());
   }
