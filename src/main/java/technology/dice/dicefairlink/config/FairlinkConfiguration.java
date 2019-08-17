@@ -57,7 +57,7 @@ public class FairlinkConfiguration {
 
   private boolean resolveValidationConnection(Properties properties) {
     return Optional.ofNullable(Boolean.parseBoolean(properties.getProperty(VALIDATE_CONNECTION)))
-        .orElse(Boolean.TRUE;
+        .orElse(Boolean.TRUE);
   }
 
   private void validateConfiguration() {
