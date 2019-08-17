@@ -8,6 +8,7 @@ package technology.dice.dicefairlink.discovery.members.awsapi;
 import software.amazon.awssdk.services.rds.RdsClient;
 import software.amazon.awssdk.services.rds.model.DBCluster;
 import software.amazon.awssdk.services.rds.model.DBClusterMember;
+import software.amazon.awssdk.services.rds.model.DBInstance;
 import software.amazon.awssdk.services.rds.model.DescribeDbClustersRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbClustersResponse;
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
@@ -80,18 +81,8 @@ public class AwsApiReplicasFinder implements MemberFinderMethod {
               .flatMap(
                   pageOfInstances ->
                       pageOfInstances.dbInstances().stream()
-                          .filter(
-                              dbInstance ->
-                                  dbInstance.dbInstanceStatus().equalsIgnoreCase(ACTIVE_STATUS))
-                          .filter(
-                              dbInstance ->
-                                  !writer
-                                      .map(
-                                          w ->
-                                              w.dbInstanceIdentifier()
-                                                  .equalsIgnoreCase(
-                                                      dbInstance.dbInstanceIdentifier()))
-                                      .orElse(false))
+                          .filter(AwsApiReplicasFinder::isActive)
+                          .filter(dbInstance -> isDbWriter(writer, dbInstance))
                           .map(dbInstance -> dbInstance.dbInstanceIdentifier()))
               .collect(Collectors.toSet());
 
@@ -102,6 +93,16 @@ public class AwsApiReplicasFinder implements MemberFinderMethod {
           Level.SEVERE, "Failed to list cluster replicas. Returning an empty set of replicas", e);
       return EMPTY_SET;
     }
+  }
+
+  private static boolean isDbWriter(Optional<DBClusterMember> writer, DBInstance dbInstance) {
+    return !writer
+        .map(w -> w.dbInstanceIdentifier().equalsIgnoreCase(dbInstance.dbInstanceIdentifier()))
+        .orElse(false);
+  }
+
+  private static boolean isActive(DBInstance dbInstance) {
+    return dbInstance.dbInstanceStatus().equalsIgnoreCase(ACTIVE_STATUS);
   }
 
   @Override
