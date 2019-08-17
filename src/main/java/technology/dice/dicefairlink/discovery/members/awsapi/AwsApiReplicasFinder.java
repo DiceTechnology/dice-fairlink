@@ -73,13 +73,13 @@ public class AwsApiReplicasFinder implements MemberFinderMethod {
               .build();
       final Optional<DBClusterMember> writer =
           cluster.dbClusterMembers().stream().filter(member -> member.isClusterWriter()).findAny();
-      final DescribeDBInstancesIterable describeDbInstancesResponses =
+      final DescribeDBInstancesIterable deescribeInstancesPaginator =
           client.describeDBInstancesPaginator(request);
       final Set<String> replicaIds =
-          describeDbInstancesResponses.stream()
+          deescribeInstancesPaginator.stream()
               .flatMap(
-                  dbInstances ->
-                      dbInstances.dbInstances().stream()
+                  pageOfInstances ->
+                      pageOfInstances.dbInstances().stream()
                           .filter(
                               dbInstance ->
                                   dbInstance.dbInstanceStatus().equalsIgnoreCase(ACTIVE_STATUS))
