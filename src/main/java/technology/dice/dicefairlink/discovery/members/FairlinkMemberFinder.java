@@ -87,7 +87,8 @@ public class FairlinkMemberFinder implements MemberFinder {
               .collect(Collectors.toSet());
       final SizedIterator<String> result =
           filteredReplicas.isEmpty()
-              ? this.iteratorBuilder.apply(this.setOf(clusterInfo.getReadonlyEndpoint()))
+              ? this.iteratorBuilder.apply(
+                  this.setOf(fairlinkConfiguration.hostname(clusterInfo.getReadonlyEndpoint())))
               : this.iteratorBuilder.apply(filteredReplicas);
       long after = System.currentTimeMillis();
       LOGGER.info(
