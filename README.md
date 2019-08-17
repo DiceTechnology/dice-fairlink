@@ -12,11 +12,12 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 
 # How can I use dice-fairlink (TL/DR version)?
 - Add dice-fairlink as a dependency to your JVM project
+- Add software.amazon.awssdk:rds and software.amazon.awssdk:resourcegroupstaggingapi as dependencies of your project
 - Add `fairlink` as a jdbc sub-protocol to your connection string's schema
 - If using the AWS API discovery mode, change your connection string's host to the name of your AWS Aurora cluster. Use the cluster's read-only endpoint otherwise
 
 # Here for version 1.x.x ?
-Version 2.x.x of dice-fairlink is internally substancially different, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
+Version 2.x.x of dice-fairlink is substancially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
 
 Changes from 1.x.x:
 - Renamed the sub-protocol from `auroraro` to `fairlink`
@@ -30,7 +31,7 @@ Changes from 1.x.x:
 
 # Usage Examples
 
-dice-fairlink implements a generic sub-protocol of any existing jdbc protocol (psql,mysql,etc). The host section of the URL should be the cluster identifier and not the hostname of any cluster or instance endpoint.
+dice-fairlink implements a generic sub-protocol of any existing jdbc protocol (psql,mysql,etc). For AWS API discovery (see below) the host section of the URL should be the cluster identifier and not the hostname of any cluster or instance endpoint.
 
 The driver will accept urls in the form `jdbc:fairlink:XXXX` and delegate the actual handling of the connection to the driver of the protocol `XXXX` (which needs to be loadable by the JVM classloader).
 
@@ -66,7 +67,7 @@ String connectionString = "jdbc:fairlink:mysql://my-cluster.cluster-xxxxx.region
 dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
 and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
 
-Contraty to the `AWS API` discovery mode, thre is no check for replicas in the `available` state will be used. It is recommended to always enable the connection test via the `validateConnection` (activated by dfault) property (see Driver Properties section).
+Contraty to the `AWS API` discovery mode, there is no check that only replicas in the `available` state will be used. It is recommended to always enable the connection test via the `validateConnection` (activated by dfault) property (see Driver Properties section).
 
 ### Driver properties:
 ```
@@ -80,9 +81,9 @@ Dynamic changes to the cluster (node promotions, removals and additions) are aut
 
 
 # Member discovery
-dice-fairlink offers two options to discover the members of an Aurora cluster. It polls for any changes and update the internal with the configured frequency (see Driver Properties section). The driver does this once when the driver is loaded, and enters the periodic poll cycle This after a random delay of up to 10 seconds. This is to avoid, in scenarios of large clusters of applications using dice-fairlink, exceeding the rate limits imposed by AWS. 
+dice-fairlink offers two options to discover the members of an Aurora cluster. It polls for any changes and update its internal state with the configured frequency (see Driver Properties section). The driver does this once when the driver is loaded, and enters the periodic poll cycle This after a random delay of up to 10 seconds. This is to avoid, in scenarios of large clusters of applications using dice-fairlink, exceeding the rate limits imposed by AWS. 
 
-Versions 1.x.x of dice-fairlink are very prone to this problem, as it made 1+2*number_of_replicas (`O(n)`) calls on each cycle. Versions 2.x.x make 2 (`O(1)`) calls per cycle when using `AWS API` discovery mode, and 0 calls per cycle when using `MySQL` mode. See the Exclusions section to learn about an additional call on both discovery modes.
+Versions 1.x.x of dice-fairlink are very prone to this problem, as it maks 1+2*number_of_replicas (`O(n)`) calls on each cycle. Versions 2.x.x make 2 (`O(1)`) calls per cycle when using `AWS API` discovery mode, and 0 calls per cycle when using `MySQL` mode. See the Exclusions section to learn about an additional call on both discovery modes.
 
 ## AWS API Mode
 dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/Welcome.html) to discover the members of a cluster, and to determine which cluster member is the writer. Unfortunately this requires two separate calls that are made in sequence. To use this discovery mode, the code must be executed by an IAM user with the following policy:
@@ -109,7 +110,7 @@ dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/
 ]
 ``` 
 
-Note that the regexes above can be merely `*` depending on how precise you want your permissions to be.
+Note that the regexes above can be merely `*` depending on how strict you want your permissions to be.
 
 
 When using the `AWS API` discovery mode, the `host` part of the connection string must be the **cluster identifier**. For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc`.
@@ -121,7 +122,7 @@ dice-fairlink uses the `information_schema.replica_host_status` table available 
 
 This discovery mode does not require any special IAM user permissions. 
 
-When using the `MySQL` discovery mode, the `host` part of the connection string must be a **cluster endpoint** (either the writer or reader endpoint will work). For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`.
+When using the `MySQL` discovery mode, the `host` part of the connection string must be a **cluster endpoint** (either the writer or reader endpoint will work). For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com` or `abc.cluster-ro-xxxxxx.eu-west-1.rds.amazonaws.com`. This host will be used as a fallback in the case clusters without any replicas or if an error occurs.
 
 ## Connection validation
 dice-fairlink validates every replica before making it available to the application. This is done once on every discovery cycle. On versions 1.x.x dice-fairlink would rely on the `RDS`API returning instances in the `available` status. On versions 2.x.x dice-fairlink executes `SELECT 1` on each discovered replica, using the underlaying protocol, as specified on the connection string. This validation occurs regardless of the discovery mode, and be disabled via the `validateConnection` property (see Driver Properties section)
@@ -132,7 +133,7 @@ It is possible to prevent members of an Aurora cluster to receive connections de
 To exclude a member, tag it with key=`Fairlink-Exclude` and value=`true`. dice-fairlink
 will treat them as not available and skip them when assigning connections. Tag changes will be picked up within the time specified in `tagsPollInterval` (see Driver Properties section). Please note that versions 1.x.x would poll for this information with a frequency determined by `replicaPollInterval` instead.
 
-dice-fairlink uses the [`Resource Group` API](https://docs.aws.amazon.com/ARG/latest/APIReference/Welcome.html) to obtain the list of all excluded members. Unfortunately this API does not offer a way to obtain only the information pertaining to a specific cluster, and as a consequence dice-fairlink will hold information about **all** RDS instances tagged with `Fairlink-Exclude=true` in the entire region of the AWS accounbt in question. It is also not possibl to restrict this via an IAM policy. It is assumed the size of this collection will not be problematic, and making a single call (instead of 1 call per database instance) outweights this waste. 
+dice-fairlink uses the [`Resource Group` API](https://docs.aws.amazon.com/ARG/latest/APIReference/Welcome.html) to obtain the list of all excluded members. Unfortunately this API does not offer a way to obtain only the information pertaining to a specific cluster, and as a consequence dice-fairlink will hold information about **all** RDS instances tagged with `Fairlink-Exclude=true` in the entire region of the AWS accounbt in question. It is also not possible to restrict this via an IAM policy. It is assumed the size of this collection will not be problematic, and that making a single call (instead of 1 call per database instance) outweights this waste. 
 
 For the discovery of exclusions (not possible to switch off in the current version) to work correctly, the code must be executed by an IAM user with the following policy:
 
@@ -151,7 +152,7 @@ For the discovery of exclusions (not possible to switch off in the current versi
 ```
 
 # Why do we need dice-fairlink (long version)?
-Using AWS Aurora clusters with database connection pools is a possible use case. A possible configuration is to point
+Using AWS Aurora clusters with database connection pools is a common use case. A possible configuration is to point
 a connection pool to the cluster's read-only endpoint. AWS claims ([here](https://aws.amazon.com/blogs/aws/new-reader-endpoint-for-amazon-aurora-load-balancing-higher-availability/),
 [here](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Overview.Endpoints.html), and
 [here](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_Aurora.html#Aurora.Overview.Endpoints))
