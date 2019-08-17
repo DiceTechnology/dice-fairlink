@@ -19,7 +19,7 @@ public class RandomisedCyclicIterator<T> extends CyclicIterator<T> {
   private static <T> Collection<? extends T> shuffle(Collection<? extends T> collection) {
     final ArrayList<? extends T> copy = new ArrayList<>(collection);
     Collections.shuffle(copy, ThreadLocalRandom.current());
-    return copy;
+    return Collections.unmodifiableCollection(copy);
   }
 
   public static <T> RandomisedCyclicIterator<T> of(Collection<? extends T> collection) {

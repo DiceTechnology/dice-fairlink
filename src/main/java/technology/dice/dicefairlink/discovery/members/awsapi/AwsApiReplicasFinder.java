@@ -18,6 +18,7 @@ import technology.dice.dicefairlink.discovery.members.ClusterInfo;
 import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
 import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 public class AwsApiReplicasFinder implements MemberFinderMethod {
   private static final Logger LOGGER = Logger.getLogger(AwsApiReplicasFinder.class.getName());
   private static final String ACTIVE_STATUS = "available";
-  private static final Set<String> EMPTY_SET = new HashSet<>(0);
+  private static final Set<String> EMPTY_SET = Collections.unmodifiableSet(new HashSet<>(0));
   public static final String DB_CLUSTER_ID_FILTER = "db-cluster-id";
   private final String clusterId;
   private final RdsClient client;

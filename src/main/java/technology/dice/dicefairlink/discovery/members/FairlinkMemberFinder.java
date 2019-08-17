@@ -14,6 +14,7 @@ import technology.dice.dicefairlink.iterators.SizedIterator;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 public class FairlinkMemberFinder implements MemberFinder {
   private static final Logger LOGGER = Logger.getLogger(FairlinkMemberFinder.class.getName());
   private static final ExclusionTag EXCLUSION_TAG = new ExclusionTag("Fairlink-Exclude", "true");
-  private static final Set<String> EMPTY_SET = new HashSet<>(0);
+  private static final Set<String> EMPTY_SET = Collections.unmodifiableSet(new HashSet<>(0));
 
   private final FairlinkConfiguration fairlinkConfiguration;
   private final MemberFinderMethod memberFinder;
@@ -36,7 +37,8 @@ public class FairlinkMemberFinder implements MemberFinder {
   protected final FairlinkConnectionString fairlinkConnectionString;
   protected final TagFilter tagFilter;
   protected Optional<String> fallbackEndpoint = Optional.empty();
-  protected Collection<String> excludedInstanceIds = new HashSet<>(0);
+  protected Collection<String> excludedInstanceIds =
+      Collections.unmodifiableCollection(new HashSet<>(0));
 
   public FairlinkMemberFinder(
       FairlinkConfiguration fairlinkConfiguration,
@@ -139,7 +141,7 @@ public class FairlinkMemberFinder implements MemberFinder {
   private Set<String> setOf(String entry) {
     Set<String> set = new HashSet<>(1);
     set.add(entry);
-    return set;
+    return Collections.unmodifiableSet(set);
   }
 
   private boolean validate(String host) {

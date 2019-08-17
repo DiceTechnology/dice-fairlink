@@ -12,6 +12,7 @@ import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.ResultSet;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -21,7 +22,8 @@ import java.util.stream.Collectors;
 
 public class MySQLReplicasFinder implements MemberFinderMethod {
   private static final Logger LOGGER = Logger.getLogger(MySQLReplicasFinder.class.getName());
-  private static final Set<DatabaseInstance> EMPTY_SET = new HashSet<>(0);
+  private static final Set<DatabaseInstance> EMPTY_SET =
+      Collections.unmodifiableSet(new HashSet<>(0));
   private static final String DEFAULT_INFORMATION_SCHEMA_NAME = "information_schema";
   private static final String FIND_NODES_QUERY_TEMPLATE =
       "select server_id, if(session_id =    'MASTER_SESSION_ID',"
@@ -64,7 +66,7 @@ public class MySQLReplicasFinder implements MemberFinderMethod {
           e);
       return EMPTY_SET;
     }
-    return instances;
+    return Collections.unmodifiableSet(instances);
   }
 
   @Override

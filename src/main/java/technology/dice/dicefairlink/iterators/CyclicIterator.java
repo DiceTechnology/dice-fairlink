@@ -7,6 +7,7 @@ package technology.dice.dicefairlink.iterators;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -16,7 +17,7 @@ public class CyclicIterator<T> implements SizedIterator<T> {
   private Iterator<T> iterator;
 
   protected CyclicIterator(Collection<? extends T> collection) {
-    this.elements = new ArrayList<>(collection);
+    this.elements = Collections.unmodifiableList(new ArrayList(collection));
     this.iterator = this.elements.iterator();
   }
 

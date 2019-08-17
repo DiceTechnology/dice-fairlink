@@ -14,6 +14,7 @@ import technology.dice.dicefairlink.discovery.tags.TagFilter;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
@@ -34,8 +35,9 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
             .region(fairlinkConfiguration.getAuroraClusterRegion())
             .credentialsProvider(fairlinkConfiguration.getAwsCredentialsProvider())
             .build();
-    this.typeFilter = new ArrayList<>(1);
-    this.typeFilter.add(RDS_DB_INSTANCE_FILTER);
+    Collection<String> temporaryTypeFilter = new ArrayList<>(1);
+    temporaryTypeFilter.add(RDS_DB_INSTANCE_FILTER);
+    this.typeFilter = Collections.unmodifiableCollection(temporaryTypeFilter);
   }
 
   @Override
@@ -71,7 +73,7 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
           Level.SEVERE,
           "Failed to obtain excluded instances. All instances assumed not to be excluded",
           e);
-      return new HashSet<>(0);
+      return Collections.unmodifiableSet(new HashSet<>(0));
     }
   }
 }
