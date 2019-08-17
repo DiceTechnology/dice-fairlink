@@ -119,9 +119,9 @@ public class AuroraReadReplicasDriverTest {
   }
 
   @Test
-  public void testMalformedUrl() throws Exception {
+  public void testWellformedConnectionstringWithMalformedHost() throws Exception {
     AuroraReadReplicasDriver underTest = new AuroraReadReplicasDriver();
-    Assert.assertNull(underTest.connect("<>%%ad", new Properties()));
+    Assert.assertNull(underTest.connect("jdbc:fairlink:<>|/://host:3306/id?useSSL=false", new Properties()));
   }
 
   @Test
