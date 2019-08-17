@@ -104,6 +104,52 @@ public class FairlinkMemberFinderTest {
   }
 
   @Test
+  public void singleReplicaExcluded() throws URISyntaxException {
+    FairlinkMemberFinder underTest =
+        new FairlinkMemberFinder(
+            new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
+                this.baseTestProperties()),
+            this.exclusionTagsExecutor,
+            new FixedSetExcludedReplicasFinder(ImmutableSet.of("r1")),
+            new FixedSetReplicasFinder("my-fallback.domain.com", ImmutableSet.of("r1")),
+            strings -> TestCyclicIterator.of(strings),
+            (host, properties) -> true);
+    this.exclusionTagsExecutor.step();
+    final SizedIterator<String> result = underTest.discoverReplicas();
+
+    Assert.assertTrue(result instanceof TestCyclicIterator);
+    Assert.assertEquals(1, result.size());
+    Assert.assertEquals(
+        ImmutableSet.of(this.addDomain("my-fallback.domain.com", this.baseTestProperties())),
+        ((TestCyclicIterator) result).getElements());
+  }
+
+  @Test
+  public void singleReplicaNotExcluded() throws URISyntaxException {
+    FairlinkMemberFinder underTest =
+        new FairlinkMemberFinder(
+            new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
+                this.baseTestProperties()),
+            this.exclusionTagsExecutor,
+            new FixedSetExcludedReplicasFinder(ImmutableSet.of()),
+            new FixedSetReplicasFinder("r1", ImmutableSet.of()),
+            strings -> TestCyclicIterator.of(strings),
+            (host, properties) -> true);
+    this.exclusionTagsExecutor.step();
+    final SizedIterator<String> result = underTest.discoverReplicas();
+
+    Assert.assertTrue(result instanceof TestCyclicIterator);
+    Assert.assertEquals(1, result.size());
+    Assert.assertEquals(
+        ImmutableSet.of(this.addDomain("r1", this.baseTestProperties())),
+        ((TestCyclicIterator) result).getElements());
+  }
+
+  @Test
   public void allGoodNoValidation() throws URISyntaxException {
     final Properties disabledValidation = this.baseTestProperties();
     disabledValidation.put("validateConnection", "false");
