@@ -3,18 +3,17 @@
  *
  * Please see distribution for license.
  */
-package technology.dice.dicefairlink;
+package technology.dice.dicefairlink.config;
 
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum DiscoveryAuthMode {
-  BASIC,
-  ENVIRONMENT,
-  DEFAULT_CHAIN;
+public enum ReplicasDiscoveryMode {
+  AWS_API,
+  SQL_MYSQL;
 
-  public static Optional<DiscoveryAuthMode> fromStringInsensitive(String candidate) {
-    return Arrays.stream(DiscoveryAuthMode.values())
+  public static Optional<ReplicasDiscoveryMode> fromStringInsensitive(String candidate) {
+    return Arrays.stream(ReplicasDiscoveryMode.values())
         .filter(mode -> mode.toString().equalsIgnoreCase(candidate))
         .findAny();
   }

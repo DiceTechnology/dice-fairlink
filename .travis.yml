@@ -1,63 +1,66 @@
-﻿language: java
+language: java
 jdk:
-- openjdk8
+  - openjdk8
 
 sudo: false
 
+services:
+  - docker
+
 branches:
   only:
-  - master
-  - "/^feature.*$/"
-  - "/^issue.*$/"
-  - "/^hotfix.*$/"
+    - master
+    - "/^feature.*$/"
+    - "/^issue.*$/"
+    - "/^hotfix.*$/"
 
 before_script:
-- "./bin/version.sh"
+  - "./bin/version.sh"
 
 script:
-- mvn clean install -q || travis_terminate 1
+  - mvn clean install -q || travis_terminate 1
 
 before_install:
-- openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
-  -in github.pem.enc -out ~/github.pem -d
-- chmod 600 ~/github.pem
-- eval "$(ssh-agent)"
-- ssh-add ~/github.pem
-- git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
-#- gpg --import travis.gpg.pem
+  - openssl aes-256-cbc -K $encrypted_c423d447bd66_key -iv $encrypted_c423d447bd66_iv
+    -in github.pem.enc -out ~/github.pem -d
+  - chmod 600 ~/github.pem
+  - eval "$(ssh-agent)"
+  - ssh-add ~/github.pem
+  - git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
 
 env:
   global:
-    secure: ZrZhMttwOwJppPBLqT4iev4H+EhGhod3G61niFADurOZJU9jquR6cLu7YQxi+wEnQtfaiPCRRZIO9yopzYQxMvxEX7xDYNKZV9hv1R0B4F1iUJht2BUPzBnpnYBXJRdkQVLDjQLXBrDzW0Em9w075bKC5pcpRccMWclIymJIsty09cwjBxe+r2JG5zAcMCEVH9OISguDwNeE2VB4JAF9cDSEaoeL5zunCeRP7ufbuJhJCczT5/a9yxiDKoSWnWWBbj0FxsSQkj4q461wd1f4tdXFbpYcgTkMZ2d8RiEaM6h05UJ+lxNuMHIWozhwoQv3E9I6qIeX+qMykfHS99f8w/DdLo8HpQgtWRNaTM2qpb5oMwIJAD70YIiBfT7zcppt3Jc8XqJFBMInVrCUsxedRxeBF2CpFJyFeOWKVvvDwiOQiX5W7oLLjlrIIk5c9WYq2FK+arW1ydSU+5LrbrNl/S2PqQRujl0rRI0IkDkj8bVwEQJcef0vm8DQOFsgrAs0ZvpoPI9QtEjCAYW33LwR9RwFwDE+mHTwjoJ27umZ7LTMXDV9upKk8hzF5utDv3wXCiWRsX31a/E1cgRUWlbrNl+z1nFr115WJsJTBh7O+H9HN2VNTVzXEgIh5JQ6g/A+AgEkh+qDBpilyHc7uxbrF4ThrbE5AzGYtE3IzdTI7F8=
-    secure: Ka118fVy58dr5Yh/vF2smKTRBHTC50f4U3p8SYp0DPmeOloL0JjFIcI55TlyM1Mfwk7BcUiKDSo6JCGKfKJ+ZTc2RpCicVYWJuqD/ynsGSV1yL/TaDz5tuXQe25Q8T3B4FhXx5iJd5x5tI2m59bzX+Zm6tuFmrwMrvOlxp7qJ5huKzIRjTwY++vWHG+nrBisHIjAc9PI8J6et4uL+u0Q16eZsWmmpkvP9xd42ZrgFh/a10g3MKwMqakKp9Miy4nv3rF39ww7KCTSszLo/Ash8U1nHawD9qwHvJ+S82T/hLYhUErIP1ONbrZ/KMkpAE7nuXwKtkOsjm2j5/19Chym5+IVmGRQlhShykuLqABDGqUYzCXEtx7KppEyZtI2EctWI8DeoqeCWSzee+aUHgNLcj6tylPFgEZuivgoSmJnQE5xZKNxrUHj+4yWnVqDyspcTMAqAdhnVQPzT/ARxxdWQCX7IeiBEKaNPDDM454g97NZRq3Rlu6HI9r3R/CJ2uJWUTKOlc60fLHLpGrl64Q+Jcegjjk4j4nhTyRNpB4uHNtuCEByHBNJFhwPE9RNc63PoxfQSmYLux53YkO9MTFFfBEc7CrtJHEwq+S0mblzIDLF/mV4lUx/NeonHAfYoJ/DXmUVLwcNIyt1708ACMKl4MQ1ykci3BQDr66RtGgyU9w=
+    - secure: ZrZhMttwOwJppPBLqT4iev4H+EhGhod3G61niFADurOZJU9jquR6cLu7YQxi+wEnQtfaiPCRRZIO9yopzYQxMvxEX7xDYNKZV9hv1R0B4F1iUJht2BUPzBnpnYBXJRdkQVLDjQLXBrDzW0Em9w075bKC5pcpRccMWclIymJIsty09cwjBxe+r2JG5zAcMCEVH9OISguDwNeE2VB4JAF9cDSEaoeL5zunCeRP7ufbuJhJCczT5/a9yxiDKoSWnWWBbj0FxsSQkj4q461wd1f4tdXFbpYcgTkMZ2d8RiEaM6h05UJ+lxNuMHIWozhwoQv3E9I6qIeX+qMykfHS99f8w/DdLo8HpQgtWRNaTM2qpb5oMwIJAD70YIiBfT7zcppt3Jc8XqJFBMInVrCUsxedRxeBF2CpFJyFeOWKVvvDwiOQiX5W7oLLjlrIIk5c9WYq2FK+arW1ydSU+5LrbrNl/S2PqQRujl0rRI0IkDkj8bVwEQJcef0vm8DQOFsgrAs0ZvpoPI9QtEjCAYW33LwR9RwFwDE+mHTwjoJ27umZ7LTMXDV9upKk8hzF5utDv3wXCiWRsX31a/E1cgRUWlbrNl+z1nFr115WJsJTBh7O+H9HN2VNTVzXEgIh5JQ6g/A+AgEkh+qDBpilyHc7uxbrF4ThrbE5AzGYtE3IzdTI7F8=
+    - secure: Ka118fVy58dr5Yh/vF2smKTRBHTC50f4U3p8SYp0DPmeOloL0JjFIcI55TlyM1Mfwk7BcUiKDSo6JCGKfKJ+ZTc2RpCicVYWJuqD/ynsGSV1yL/TaDz5tuXQe25Q8T3B4FhXx5iJd5x5tI2m59bzX+Zm6tuFmrwMrvOlxp7qJ5huKzIRjTwY++vWHG+nrBisHIjAc9PI8J6et4uL+u0Q16eZsWmmpkvP9xd42ZrgFh/a10g3MKwMqakKp9Miy4nv3rF39ww7KCTSszLo/Ash8U1nHawD9qwHvJ+S82T/hLYhUErIP1ONbrZ/KMkpAE7nuXwKtkOsjm2j5/19Chym5+IVmGRQlhShykuLqABDGqUYzCXEtx7KppEyZtI2EctWI8DeoqeCWSzee+aUHgNLcj6tylPFgEZuivgoSmJnQE5xZKNxrUHj+4yWnVqDyspcTMAqAdhnVQPzT/ARxxdWQCX7IeiBEKaNPDDM454g97NZRq3Rlu6HI9r3R/CJ2uJWUTKOlc60fLHLpGrl64Q+Jcegjjk4j4nhTyRNpB4uHNtuCEByHBNJFhwPE9RNc63PoxfQSmYLux53YkO9MTFFfBEc7CrtJHEwq+S0mblzIDLF/mV4lUx/NeonHAfYoJ/DXmUVLwcNIyt1708ACMKl4MQ1ykci3BQDr66RtGgyU9w=
+    - secure: Ik893zcoxIshD5k3mS1cPfZltbXAyHmhcUkIvra4Xg9nF3LO5heCxs7XJxXDFlMNRL2AXsaOywkNLOtegeEsnc82GQi3qo+JP5Pqj71NuOsUY5Jygb3W7Kg7UPyVCJPDarmGl5vMAiKUR3ASkD7rA4uLiWIAr25PBBHTgTeQ2+DKYXKiS7jEa8qbM+Ac6hKlFDC5jNTU8dwpOsseoXs6Cq3a4+fNHcO8lsBgv/a1l1pOYpQf1+kDk0Evysw4+CnXLj6gmhKtqCSphXonwTuEmqe5Zn+/WCJr794gankQA4vNS/Wqm2IJGqhsbyjm59SGlBQwWhn6WbSM+IlTPeO/ClVc0nmKJLrs3WyP0PZTnylJXpRIQgUIiN3b38ZizyNFLB6ush/EVhGi01mU00qQpMOBHSMCQHSTzME7zfhJ+mIW22cblxO9OizG/O+xsg5MZLq8FD8C2rfgtkJYlWkZ3UFTZromRchNR84Ztgqc7BpSlci0L1lEKj0meYlfnsVRV5WoIoHlySyUoqumGbU3WCHJPibYNlP1FxHvD7FjAiDDnhtXqqLWIxGleqDChP+dsr0PDeBshqkyE0raRAofHnoEa5bfQNyCZDEyIjmRkVct6vta8QOl4TWEINwB6FKL56lMaysXURYPDq8IiticD+es6Cth5uqMBSykrJaudDk=
 
 cache:
   directories:
-  - "~/.m2/repository"
+    - "~/.m2/repository"
 
 after_success:
- #
+  - bash <(curl -s https://codecov.io/bash) -t $encrypted_uuid_repo_token
 
 deploy:
-- provider: script
-  script: "./bin/version.sh"
-  skip_cleanup: true
-  on:
-    branch: master
-- provider: script
-  script: "./bin/tag.sh"
-  skip_cleanup: true
-  on:
-    branch: master
-- provider: script
-  script: "./cd/deploy.sh"
-  skip_cleanup: true
-  on:
-    branch: master
+  - provider: script
+    script: "./bin/version.sh"
+    skip_cleanup: true
+    on:
+      branch: master
+  - provider: script
+    script: "./bin/tag.sh"
+    skip_cleanup: true
+    on:
+      branch: master
+  - provider: script
+    script: "./cd/deploy.sh"
+    skip_cleanup: true
+    on:
+      branch: master
 
 notifications:
   slack:
     on_success: never
     on_failure: always
     rooms:
-    - dicetechnology: $encrypted_SLACK_ROOM_API_KEY
+      - dicetechnology: $encrypted_SLACK_ROOM_API_KEY

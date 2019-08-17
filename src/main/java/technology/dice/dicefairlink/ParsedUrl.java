@@ -5,8 +5,6 @@
  */
 package technology.dice.dicefairlink;
 
-import java.util.Objects;
-
 public class ParsedUrl {
   private final String delegateProtocol;
   private final String delegateUrl;
@@ -22,23 +20,5 @@ public class ParsedUrl {
 
   public String getDelegateUrl() {
     return delegateUrl;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof ParsedUrl)) {
-      return false;
-    }
-    ParsedUrl parsedUrl = (ParsedUrl) o;
-    return Objects.equals(getDelegateProtocol(), parsedUrl.getDelegateProtocol())
-        && Objects.equals(getDelegateUrl(), parsedUrl.getDelegateUrl());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getDelegateProtocol(), getDelegateUrl());
   }
 }

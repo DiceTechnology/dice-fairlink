@@ -5,19 +5,19 @@
  */
 package technology.dice.dicefairlink.iterators;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
-import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import java.util.ArrayList;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RandomisedCyclicIteratorTest {
 
@@ -32,7 +32,6 @@ public class RandomisedCyclicIteratorTest {
   @Before
   public void setUp() {
     numberOfElementsToTest = ThreadLocalRandom.current().nextInt(MIN_SIZE, MAX_SIZE);
-    System.out.println("Running test " + testName.getMethodName() + " with numberOfElementsToTest = " + numberOfElementsToTest);
   }
 
   @Test(expected = NoSuchElementException.class)
@@ -62,8 +61,7 @@ public class RandomisedCyclicIteratorTest {
     final List<String> listOfStrings = new LinkedList<>();
     listOfStrings.add(singleElement);
 
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(listOfStrings);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.of(listOfStrings);
 
     assertThat(cyclicIterator).isNotNull();
     for (int cycle = 0; cycle < numberOfElementsToTest; cycle++) {
@@ -81,8 +79,7 @@ public class RandomisedCyclicIteratorTest {
       listOfStrings.add(singleElement);
     }
 
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(listOfStrings);
+    RandomisedCyclicIterator<String> cyclicIterator = RandomisedCyclicIterator.of(listOfStrings);
 
     assertThat(cyclicIterator).isNotNull();
     for (int cycle = 0; cycle < numberOfElementsToTest; cycle++) {
@@ -91,80 +88,5 @@ public class RandomisedCyclicIteratorTest {
         assertThat(cyclicIterator.next()).isEqualTo(singleElement);
       }
     }
-  }
-
-  @Test
-  public void canCompareInetrnalShffeledCollectionToExternal() {
-    List<String> originalElements = new ArrayList<>(numberOfElementsToTest);
-    for (int i = 1; i <= numberOfElementsToTest; i++) {
-      originalElements.add(ELEMENT_PREFIX + i);
-    }
-
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(originalElements);
-
-    assertThat(cyclicIterator.hasSameContent(originalElements)).isTrue();
-    Collections.shuffle(originalElements);
-    assertThat(cyclicIterator.hasSameContent(originalElements)).isTrue();
-  }
-
-  @Test
-  public void canCompareInetrnalCollectionToExternal_whenBothAreSameExceptOrderOfElements() {
-    List<String> originalElements = new ArrayList<>(numberOfElementsToTest);
-    for (int i = 1; i <= numberOfElementsToTest; i++) {
-      originalElements.add(ELEMENT_PREFIX + i);
-    }
-    List<String> copyOfOriginalElements = new ArrayList<>(numberOfElementsToTest);
-    copyOfOriginalElements.addAll(originalElements);
-
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(originalElements);
-
-    assertThat(cyclicIterator.hasSameContent(copyOfOriginalElements)).isTrue();
-  }
-
-  @Test
-  public void canCompareInetrnalCollectionToExternal_whenOneElementIsDifferent() {
-    List<String> originalElements = new ArrayList<>(numberOfElementsToTest);
-    for (int i = 1; i <= numberOfElementsToTest; i++) {
-      originalElements.add(ELEMENT_PREFIX + i);
-    }
-    List<String> differentElements = new ArrayList<>(numberOfElementsToTest);
-    differentElements.addAll(originalElements);
-    differentElements.set(ThreadLocalRandom.current().nextInt(MIN_SIZE, numberOfElementsToTest), "DIFFERENT_ELEMENT");
-
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(originalElements);
-
-    assertThat(cyclicIterator.hasSameContent(differentElements)).isFalse();
-  }
-
-  @Test
-  public void canCompareInetrnalCollectionToExternal_whenDirrefentInSize() {
-    List<String> originalElements = new ArrayList<>(numberOfElementsToTest);
-    for (int i = 1; i <= numberOfElementsToTest; i++) {
-      originalElements.add(ELEMENT_PREFIX + i);
-    }
-    List<String> differentElements = new ArrayList<>(numberOfElementsToTest);
-    differentElements.addAll(originalElements);
-    differentElements.remove(ThreadLocalRandom.current().nextInt(MIN_SIZE, numberOfElementsToTest));
-
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(originalElements);
-
-    assertThat(cyclicIterator.hasSameContent(differentElements)).isFalse();
-  }
-
-  @Test
-  public void canCompareInetrnalCollectionToExternal_whenCollectionIsNull() {
-    List<String> originalElements = new ArrayList<>(numberOfElementsToTest);
-    for (int i = 1; i <= numberOfElementsToTest; i++) {
-      originalElements.add(ELEMENT_PREFIX + i);
-    }
-
-    RandomisedCyclicIterator<String> cyclicIterator
-        = RandomisedCyclicIterator.<String>of(originalElements);
-
-    assertThat(cyclicIterator.hasSameContent(null)).isFalse();
   }
 }

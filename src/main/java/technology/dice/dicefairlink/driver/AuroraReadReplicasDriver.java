@@ -5,26 +5,28 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import com.amazonaws.SDKGlobalConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
+import software.amazon.awssdk.regions.Region;
 import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
-import technology.dice.dicefairlink.DiscoveryAuthMode;
 import technology.dice.dicefairlink.ParsedUrl;
+import technology.dice.dicefairlink.config.FairlinkConfiguration;
+import technology.dice.dicefairlink.discovery.members.FairlinkMemberFinder;
+import technology.dice.dicefairlink.discovery.members.JdbcConnectionValidator;
+import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
+import technology.dice.dicefairlink.discovery.members.ReplicaValidator;
+import technology.dice.dicefairlink.discovery.members.awsapi.AwsApiReplicasFinder;
+import technology.dice.dicefairlink.discovery.members.sql.MySQLReplicasFinder;
+import technology.dice.dicefairlink.discovery.tags.TagFilter;
+import technology.dice.dicefairlink.discovery.tags.awsapi.ResourceGroupApiTagDiscovery;
+import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
+import technology.dice.dicefairlink.iterators.SizedIterator;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -32,30 +34,22 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class AuroraReadReplicasDriver implements Driver {
-
-  public static final String AWS_AUTH_MODE_PROPERTY_NAME = "auroraDiscoveryAuthMode";
-  public static final String AWS_BASIC_CREDENTIALS_KEY = "auroraDiscoveryKeyId";
-  public static final String AWS_BASIC_CREDENTIALS_SECRET = "auroraDiscoverKeySecret";
-  public static final String REPLICA_POLL_INTERVAL_PROPERTY_NAME = "replicaPollInterval";
-  public static final String CLUSTER_REGION = "auroraClusterRegion";
-
   private static final Logger LOGGER = Logger.getLogger(AuroraReadReplicasDriver.class.getName());
-  private static final String DRIVER_PROTOCOL = "auroraro";
-  private static final Pattern driverPattern =
-      Pattern.compile("jdbc:" + DRIVER_PROTOCOL + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
-  private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
-  private static final String JDBC_PREFIX = "jdbc";
   private final Map<String, Driver> delegates = new HashMap<>();
-  private final Map<URI, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
+  private final Map<String, AuroraReadonlyEndpoint> auroraClusters = new HashMap<>();
 
-  private final Supplier<ScheduledExecutorService> executorSupplier;
+  private final Supplier<ScheduledExecutorService> discoveryExecutor;
+  private final Supplier<ScheduledExecutorService> tagPollExecutor;
+  private final Optional<Supplier<TagFilter>> tagFilter;
+  private final Optional<Supplier<FairlinkMemberFinder>> fairlinkMemberFinder;
+  private final Optional<Function<Collection<String>, SizedIterator<String>>> sizedIteratorBuilder;
+  private final Optional<Supplier<ReplicaValidator>> replicaValidator;
 
   static {
     try {
@@ -67,12 +61,29 @@ public class AuroraReadReplicasDriver implements Driver {
   }
 
   public AuroraReadReplicasDriver() {
-    this(() -> Executors.newScheduledThreadPool(1));
+    this(
+        () -> Executors.newScheduledThreadPool(1),
+        () -> Executors.newScheduledThreadPool(1),
+        null,
+        null,
+        null,
+        null);
   }
 
-  public AuroraReadReplicasDriver(final Supplier<ScheduledExecutorService> executorSupplier) {
+  public AuroraReadReplicasDriver(
+      final Supplier<ScheduledExecutorService> discoveryExecutor,
+      final Supplier<ScheduledExecutorService> tagPollExecutor,
+      final Supplier<TagFilter> tagFilter,
+      final Supplier<FairlinkMemberFinder> memberFinder,
+      final Supplier<ReplicaValidator> replicaValidator,
+      final Function<Collection<String>, SizedIterator<String>> iteratorBuilder) {
     LOGGER.fine("Starting...");
-    this.executorSupplier = executorSupplier;
+    this.discoveryExecutor = discoveryExecutor;
+    this.tagPollExecutor = tagPollExecutor;
+    this.tagFilter = Optional.ofNullable(tagFilter);
+    this.replicaValidator = Optional.ofNullable(replicaValidator);
+    this.fairlinkMemberFinder = Optional.ofNullable(memberFinder);
+    this.sizedIteratorBuilder = Optional.ofNullable(iteratorBuilder);
   }
 
   @Override
@@ -80,7 +91,7 @@ public class AuroraReadReplicasDriver implements Driver {
     if (url == null) {
       throw new SQLException("Url must not be null");
     }
-    final boolean matches = driverPattern.matcher(url).matches();
+    boolean matches = FairlinkConnectionString.accepts(url);
     LOGGER.info(String.format("Accepting URL: [%s] : %s", url, matches));
     return matches;
   }
@@ -88,19 +99,14 @@ public class AuroraReadReplicasDriver implements Driver {
   /** {@inheritDoc} */
   @Override
   public Connection connect(final String url, final Properties properties) throws SQLException {
-    try {
-      final Optional<ParsedUrl> parsedUrlOptional = parseUrlAndCacheDriver(url, properties);
-      final ParsedUrl parsedUrl =
-          parsedUrlOptional.orElseThrow(
-              () -> new SQLException(String.format("Invalid url: [%s]", url)));
-      // TODO if our info about replica is wrong (say, instance is down), then following 'connect'
-      // will throw, and we must re-query Aurora Cluster and try again once.
-      return delegates
-          .get(parsedUrl.getDelegateProtocol())
-          .connect(parsedUrl.getDelegateUrl(), properties);
-    } catch (URISyntaxException ex) {
-      throw new SQLException(ex);
+    final Optional<ParsedUrl> parsedUrlOptional = parseUrlAndCacheDriver(url, properties);
+
+    if (!parsedUrlOptional.isPresent()) {
+      return null;
     }
+    return delegates
+        .get(parsedUrlOptional.get().getDelegateProtocol())
+        .connect(parsedUrlOptional.get().getDelegateUrl(), properties);
   }
 
   /** {@inheritDoc} */
@@ -133,157 +139,116 @@ public class AuroraReadReplicasDriver implements Driver {
     return false;
   }
 
-  private Region getRegion(final Properties properties) {
-    final String propertyRegion = properties.getProperty(CLUSTER_REGION);
-    LOGGER.log(Level.FINE, "Region from property: {0}", propertyRegion);
-    if (propertyRegion != null) {
-      return RegionUtils.getRegion(propertyRegion);
-    }
-
-    final String envRegion = System.getenv("AWS_DEFAULT_REGION");
-    LOGGER.log(Level.FINE, "Region from environment: {0}", envRegion);
-    if (envRegion != null) {
-      return RegionUtils.getRegion(envRegion);
-    }
-    throw new RuntimeException(
-        "Region is null. Please either provide property ["
-            + CLUSTER_REGION
-            + "] or set the environment variable [AWS_DEFAULT_REGION]");
-  }
-
-  private AWSCredentialsProvider awsAuth(Properties properties) throws SQLException {
-    DiscoveryAuthMode authMode =
-        DiscoveryAuthMode.fromStringInsensitive(
-                properties.getProperty(AWS_AUTH_MODE_PROPERTY_NAME, "default_chain"))
-            .orElse(DiscoveryAuthMode.DEFAULT_CHAIN);
-    LOGGER.log(Level.FINE, "authMode: {0}", authMode);
-    switch (authMode) {
-      case BASIC:
-        String key = properties.getProperty(AWS_BASIC_CREDENTIALS_KEY);
-        String secret = properties.getProperty(AWS_BASIC_CREDENTIALS_SECRET);
-        if (key == null || secret == null) {
-          throw new SQLException(
-              String.format(
-                  "For basic authentication both [%s] and [%s] must both be set",
-                  AWS_BASIC_CREDENTIALS_KEY, AWS_BASIC_CREDENTIALS_SECRET));
-        }
-        return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
-      case ENVIRONMENT:
-        if (LOGGER.isLoggable(Level.FINE)) {
-          logAwsAccessKeys();
-        }
-        return new EnvironmentVariableCredentialsProvider();
-      default:
-        // DEFAULT_CHAIN
-        return DefaultAWSCredentialsProviderChain.getInstance();
-    }
-  }
-
-  private void logAwsAccessKeys() {
-    final String accessKey =
-        getDualEnvironmentVariable(
-            SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR,
-            SDKGlobalConfiguration.ALTERNATE_ACCESS_KEY_ENV_VAR);
-    final String secretKey =
-        getDualEnvironmentVariable(
-            SDKGlobalConfiguration.SECRET_KEY_ENV_VAR,
-            SDKGlobalConfiguration.ALTERNATE_SECRET_KEY_ENV_VAR);
-    LOGGER.log(
-        Level.FINE,
-        String.format(
-            "accessKey: %s**",
-            accessKey != null && accessKey.length() > 4 ? accessKey.substring(0, 3) : ""));
-    LOGGER.log(
-        Level.FINE,
-        String.format(
-            "secretKey: %s**",
-            secretKey != null && secretKey.length() > 4 ? secretKey.substring(0, 3) : ""));
-  }
-
-  private String getDualEnvironmentVariable(
-      final String primaryVarName, final String secondaryVarName) {
-    final String primaryVal = System.getenv(primaryVarName);
-    if (primaryVal == null) {
-      return System.getenv(secondaryVarName);
-    }
-    return primaryVal;
-  }
-
   private Optional<ParsedUrl> parseUrlAndCacheDriver(final String url, final Properties properties)
-      throws SQLException, URISyntaxException {
+      throws SQLException {
     LOGGER.log(Level.FINE, "URI: {0}", url);
-    Matcher matcher = driverPattern.matcher(url);
-    if (!matcher.matches()) {
-      LOGGER.log(Level.INFO, "URI not supported [{0}]. Returning empty.", url);
-      return Optional.empty();
-    }
-    String delegate = matcher.group("delegate");
-    LOGGER.log(Level.FINE, "Delegate driver: {0}", delegate);
-    final String clusterURI = DRIVER_PROTOCOL + ":" + matcher.group("uri");
     try {
-      URI uri = new URI(clusterURI);
-      LOGGER.log(Level.FINE, "Driver URI: {0}", uri);
-      final Region region = getRegion(properties);
-      LOGGER.log(Level.FINE, "Region: {0}", region);
 
-      if (!this.auroraClusters.containsKey(uri)) {
+      FairlinkConnectionString fairlinkConnectionString =
+          new FairlinkConnectionString(url, properties);
+
+      if (!this.auroraClusters.containsKey(fairlinkConnectionString.getFairlinkUri())) {
+        FairlinkConfiguration fairlinkConfiguration =
+            new FairlinkConfiguration(properties, System.getenv());
+        if (!fairlinkConfiguration.isDiscoveryModeValidForDelegate(
+            fairlinkConnectionString.getDelegateProtocol())) {
+          return Optional.empty();
+        }
+        LOGGER.log(
+            Level.FINE, "Delegate driver: {0}", fairlinkConnectionString.getDelegateProtocol());
+        LOGGER.log(Level.FINE, "Driver URI: {0}", fairlinkConnectionString.getFairlinkUri());
+        final Region region = fairlinkConfiguration.getAuroraClusterRegion();
+        LOGGER.log(Level.FINE, "Region: {0}", region);
         // because AWS credentials, region and poll interval properties
         // are only processed once per uri, the driver does not support dynamically changing them
-        final Duration pollerInterval = getPollerInterval(properties);
-        final AWSCredentialsProvider credentialsProvider = awsAuth(properties);
+
+        this.addDriverForDelegate(
+            fairlinkConnectionString.getDelegateProtocol(),
+            fairlinkConnectionString.delegateConnectionString());
+
         final AuroraReadonlyEndpoint roEndpoint =
             new AuroraReadonlyEndpoint(
-                uri.getHost(), credentialsProvider, pollerInterval, region, executorSupplier.get());
+                fairlinkConfiguration,
+                this.fairlinkMemberFinder
+                    .map(Supplier::get)
+                    .orElseGet(
+                        () ->
+                            newMemberFinder(
+                                fairlinkConnectionString, fairlinkConfiguration, properties)),
+                this.discoveryExecutor.get());
 
-        LOGGER.log(Level.FINE, "RO url: {0}", uri.getHost());
-        this.auroraClusters.put(uri, roEndpoint);
+        LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
+        this.auroraClusters.put(fairlinkConnectionString.getFairlinkUri(), roEndpoint);
       }
 
-      final String nextReplica = auroraClusters.get(uri).getNextReplica();
+      final String nextReplica =
+          auroraClusters.get(fairlinkConnectionString.getFairlinkUri()).getNextReplica();
       LOGGER.fine(
           String.format(
               "Obtained [%s] for the next replica to use for cluster [%s]",
-              nextReplica, uri.getHost()));
-      final String prefix = String.format("%s:%s", JDBC_PREFIX, delegate);
+              nextReplica, fairlinkConnectionString.getHost()));
       final String delegatedReplicaUri =
-          (nextReplica.startsWith(prefix))
-              ? nextReplica
-              : new URI(
-                      prefix,
-                      uri.getUserInfo(),
-                      nextReplica,
-                      uri.getPort(),
-                      uri.getPath(),
-                      uri.getQuery(),
-                      uri.getFragment())
-                  .toASCIIString();
+          fairlinkConnectionString.delegateConnectionString(nextReplica);
+
       LOGGER.log(Level.FINE, "URI to connect to: {0}", delegatedReplicaUri);
 
-      addDriverForDelegate(delegate, delegatedReplicaUri);
+      return Optional.of(
+          new ParsedUrl(fairlinkConnectionString.getDelegateProtocol(), delegatedReplicaUri));
 
-      return Optional.of(new ParsedUrl(delegate, delegatedReplicaUri));
-    } catch (URISyntaxException | NoSuchElementException e) {
-      LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + clusterURI, e);
+    } catch (URISyntaxException e) {
+      LOGGER.log(Level.FINE, "Can not get replicas for cluster URI: " + url, e);
       return Optional.empty();
+    } catch (NoSuchElementException | IllegalArgumentException e) {
+      LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + url, e);
+      return Optional.empty();
+    }
+  }
+
+  private FairlinkMemberFinder newMemberFinder(
+      FairlinkConnectionString fairlinkConnectionString,
+      FairlinkConfiguration fairlinkConfiguration,
+      Properties properties) {
+    return new FairlinkMemberFinder(
+        fairlinkConfiguration,
+        fairlinkConnectionString,
+        this.tagPollExecutor.get(),
+        this.tagFilter
+            .map(Supplier::get)
+            .orElseGet(() -> new ResourceGroupApiTagDiscovery(fairlinkConfiguration)),
+        this.newMemberFinderMethod(
+            fairlinkConfiguration,
+            fairlinkConnectionString,
+            this.delegates.get(fairlinkConnectionString.getDelegateProtocol()),
+            properties),
+        this.sizedIteratorBuilder.orElse(strings -> RandomisedCyclicIterator.of(strings)),
+        this.replicaValidator
+            .map(Supplier::get)
+            .orElse(
+                new JdbcConnectionValidator(
+                    this.delegates.get(fairlinkConnectionString.getDelegateProtocol()))));
+  }
+
+  private MemberFinderMethod newMemberFinderMethod(
+      FairlinkConfiguration fairlinkConfiguration,
+      FairlinkConnectionString fairlinkConnectionString,
+      Driver driver,
+      Properties properties) {
+    switch (fairlinkConfiguration.getReplicasDiscoveryMode()) {
+      case AWS_API:
+        return new AwsApiReplicasFinder(fairlinkConfiguration, fairlinkConnectionString);
+      case SQL_MYSQL:
+        return new MySQLReplicasFinder(
+            fairlinkConnectionString,
+            driver,
+            properties.getProperty("_fairlinkMySQLSchemaOverride"));
+      default:
+        throw new IllegalArgumentException(
+            fairlinkConfiguration.getReplicasDiscoveryMode().name()
+                + "is not a valid discovery mode");
     }
   }
 
   private void addDriverForDelegate(String delegate, final String stringURI) throws SQLException {
-    if (!this.delegates.containsKey(delegate)) {
-      this.delegates.put(delegate, DriverManager.getDriver(stringURI));
-    }
-  }
-
-  private Duration getPollerInterval(Properties properties) {
-    try {
-      return Duration.ofSeconds(
-          Integer.parseInt(properties.getProperty(REPLICA_POLL_INTERVAL_PROPERTY_NAME)));
-    } catch (IllegalArgumentException | NullPointerException e) {
-      LOGGER.warning(
-          String.format(
-              "No or invalid polling interval specified. Using default replica poll interval of %s",
-              DEFAULT_POLLER_INTERVAL));
-      return DEFAULT_POLLER_INTERVAL;
-    }
+    this.delegates.putIfAbsent(delegate, DriverManager.getDriver(stringURI));
   }
 }
