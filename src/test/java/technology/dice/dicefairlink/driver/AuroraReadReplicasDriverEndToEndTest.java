@@ -110,7 +110,7 @@ public class AuroraReadReplicasDriverEndToEndTest {
         new AuroraReadReplicasDriver(
             () -> memberDiscoveryExecutor,
             () -> exclusionTagsExecutor,
-            new FixedSetExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3")),
+                ()->new FixedSetExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3")),
             null,
             null,
             new Function<Collection<String>, SizedIterator<String>>() {

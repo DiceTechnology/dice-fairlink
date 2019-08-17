@@ -46,10 +46,10 @@ public class AuroraReadReplicasDriver implements Driver {
 
   private final Supplier<ScheduledExecutorService> discoveryExecutor;
   private final Supplier<ScheduledExecutorService> tagPollExecutor;
-  private final Optional<TagFilter> tagFilter;
-  private final Optional<FairlinkMemberFinder> fairlinkMemberFinder;
+  private final Optional<Supplier<TagFilter>> tagFilter;
+  private final Optional<Supplier<FairlinkMemberFinder>> fairlinkMemberFinder;
   private final Optional<Function<Collection<String>, SizedIterator<String>>> sizedIteratorBuilder;
-  private final Optional<ReplicaValidator> replicaValidator;
+  private final Optional<Supplier<ReplicaValidator>> replicaValidator;
 
   static {
     try {
@@ -73,9 +73,9 @@ public class AuroraReadReplicasDriver implements Driver {
   public AuroraReadReplicasDriver(
       final Supplier<ScheduledExecutorService> discoveryExecutor,
       final Supplier<ScheduledExecutorService> tagPollExecutor,
-      final TagFilter tagFilter,
-      final FairlinkMemberFinder memberFinder,
-      final ReplicaValidator replicaValidator,
+      final Supplier<TagFilter> tagFilter,
+      final Supplier<FairlinkMemberFinder> memberFinder,
+      final Supplier<ReplicaValidator> replicaValidator,
       final Function<Collection<String>, SizedIterator<String>> iteratorBuilder) {
     LOGGER.fine("Starting...");
     this.discoveryExecutor = discoveryExecutor;
@@ -169,10 +169,12 @@ public class AuroraReadReplicasDriver implements Driver {
         final AuroraReadonlyEndpoint roEndpoint =
             new AuroraReadonlyEndpoint(
                 fairlinkConfiguration,
-                this.fairlinkMemberFinder.orElseGet(
-                    () ->
-                        newMemberFinder(
-                            fairlinkConnectionString, fairlinkConfiguration, properties)),
+                this.fairlinkMemberFinder
+                    .map(Supplier::get)
+                    .orElseGet(
+                        () ->
+                            newMemberFinder(
+                                fairlinkConnectionString, fairlinkConfiguration, properties)),
                 this.discoveryExecutor.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
@@ -210,16 +212,20 @@ public class AuroraReadReplicasDriver implements Driver {
         fairlinkConfiguration,
         fairlinkConnectionString,
         this.tagPollExecutor.get(),
-        this.tagFilter.orElseGet(() -> new ResourceGroupApiTagDiscovery(fairlinkConfiguration)),
+        this.tagFilter
+            .map(Supplier::get)
+            .orElseGet(() -> new ResourceGroupApiTagDiscovery(fairlinkConfiguration)),
         this.newMemberFinderMethod(
             fairlinkConfiguration,
             fairlinkConnectionString,
             this.delegates.get(fairlinkConnectionString.getDelegateProtocol()),
             properties),
         this.sizedIteratorBuilder.orElse(strings -> RandomisedCyclicIterator.of(strings)),
-        this.replicaValidator.orElse(
-            new JdbcConnectionValidator(
-                this.delegates.get(fairlinkConnectionString.getDelegateProtocol()))));
+        this.replicaValidator
+            .map(Supplier::get)
+            .orElse(
+                new JdbcConnectionValidator(
+                    this.delegates.get(fairlinkConnectionString.getDelegateProtocol()))));
   }
 
   private MemberFinderMethod newMemberFinderMethod(
