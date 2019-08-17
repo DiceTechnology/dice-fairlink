@@ -81,6 +81,31 @@ public class FairlinkMemberFinderTest {
   }
 
   @Test
+  public void allGoodNoValidation() throws URISyntaxException {
+    final Properties disabledValidation = this.baseTestProperties();
+    disabledValidation.put("validateConnection", "false");
+    FairlinkMemberFinder underTest =
+        new FairlinkMemberFinder(
+            new FairlinkConfiguration(disabledValidation, new HashMap<>()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
+                this.baseTestProperties()),
+            this.exclusionTagsExecutor,
+            new FixedSetExcludedReplicasFinder(ImmutableList.of()),
+            new FixedSetReplicasFinder("my-fallback.domain.com", baseReplicaList()),
+            strings -> TestCyclicIterator.of(strings),
+            (host, properties) -> false);
+    this.exclusionTagsExecutor.step();
+    final SizedIterator<String> result = underTest.discoverReplicas();
+
+    Assert.assertTrue(result instanceof TestCyclicIterator);
+    Assert.assertEquals(4, result.size());
+    Assert.assertEquals(
+        this.addDomain(baseReplicaList(), this.baseTestProperties()),
+        ((TestCyclicIterator) result).getElements());
+  }
+
+  @Test
   public void excludesMalformedHosts() throws URISyntaxException {
     FairlinkMemberFinder underTest =
         new FairlinkMemberFinder(
