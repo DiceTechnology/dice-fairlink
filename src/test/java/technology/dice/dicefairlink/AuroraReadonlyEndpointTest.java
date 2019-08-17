@@ -7,6 +7,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableSet;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.support.discovery.members.FixedMemberFinder;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 
@@ -55,9 +56,25 @@ public class AuroraReadonlyEndpointTest {
     AuroraReadonlyEndpoint underTest =
         new AuroraReadonlyEndpoint(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
-            new FixedMemberFinder(ImmutableList.of("r1","r1","r2")),
+            new FixedMemberFinder(ImmutableList.of("r1", "r1", "r2")),
             new StepByStepExecutor(1));
     Assert.assertEquals("r1", underTest.getNextReplica());
     Assert.assertEquals("r2", underTest.getNextReplica());
+  }
+
+  @Test
+  public void nullEntry() {
+    ArrayList acceptsNulls = new ArrayList(3);
+    acceptsNulls.add(null);
+    acceptsNulls.add(null);
+    acceptsNulls.add("r3");
+    AuroraReadonlyEndpoint underTest =
+        new AuroraReadonlyEndpoint(
+            new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
+            new FixedMemberFinder(acceptsNulls),
+            new StepByStepExecutor(1));
+    Assert.assertNull(underTest.getNextReplica());
+    Assert.assertNull(underTest.getNextReplica());
+    Assert.assertEquals("r3", underTest.getNextReplica());
   }
 }
