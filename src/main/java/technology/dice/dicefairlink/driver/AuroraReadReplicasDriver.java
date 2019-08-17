@@ -150,6 +150,10 @@ public class AuroraReadReplicasDriver implements Driver {
       if (!this.auroraClusters.containsKey(fairlinkConnectionString.getFairlinkUri())) {
         FairlinkConfiguration fairlinkConfiguration =
             new FairlinkConfiguration(properties, System.getenv());
+        if (!fairlinkConfiguration.isDiscoveryModeValidForDelegate(
+            fairlinkConnectionString.getDelegateProtocol())) {
+          return Optional.empty();
+        }
         LOGGER.log(
             Level.FINE, "Delegate driver: {0}", fairlinkConnectionString.getDelegateProtocol());
         LOGGER.log(Level.FINE, "Driver URI: {0}", fairlinkConnectionString.getFairlinkUri());
@@ -172,13 +176,6 @@ public class AuroraReadReplicasDriver implements Driver {
                 this.discoveryExecutor.get());
 
         LOGGER.log(Level.FINE, "RO url: {0}", fairlinkConnectionString.getHost());
-        if (!fairlinkConfiguration.isDiscoveryModeValidForDelegate(
-            fairlinkConnectionString.getDelegateProtocol())) {
-          throw new IllegalStateException(
-              fairlinkConfiguration.getReplicasDiscoveryMode()
-                  + " is not a valid discovery node for underlying protocol "
-                  + fairlinkConnectionString.getDelegateProtocol());
-        }
         this.auroraClusters.put(fairlinkConnectionString.getFairlinkUri(), roEndpoint);
       }
 
