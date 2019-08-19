@@ -99,8 +99,7 @@ public class FairlinkMemberFinderTest {
     Assert.assertTrue(result instanceof TestCyclicIterator);
     Assert.assertEquals(1, result.size());
     Assert.assertEquals(
-        ImmutableSet.of(this.addDomain("my-fallback.domain.com", this.baseTestProperties())),
-        ((TestCyclicIterator) result).getElements());
+        ImmutableSet.of("my-fallback.domain.com"), ((TestCyclicIterator) result).getElements());
   }
 
   @Test
@@ -123,7 +122,7 @@ public class FairlinkMemberFinderTest {
     Assert.assertTrue(result instanceof TestCyclicIterator);
     Assert.assertEquals(1, result.size());
     Assert.assertEquals(
-        ImmutableSet.of(this.addDomain("overridden-fallback.domain.com", properties)),
+        ImmutableSet.of("overridden-fallback.domain.com"),
         ((TestCyclicIterator) result).getElements());
   }
 
@@ -146,8 +145,7 @@ public class FairlinkMemberFinderTest {
     Assert.assertTrue(result instanceof TestCyclicIterator);
     Assert.assertEquals(1, result.size());
     Assert.assertEquals(
-        ImmutableSet.of(this.addDomain("my-fallback.domain.com", this.baseTestProperties())),
-        ((TestCyclicIterator) result).getElements());
+        ImmutableSet.of("my-fallback.domain.com"), ((TestCyclicIterator) result).getElements());
   }
 
   @Test
@@ -156,7 +154,7 @@ public class FairlinkMemberFinderTest {
         new FairlinkMemberFinder(
             new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
             new FairlinkConnectionString(
-                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com",
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com/schema?p=xx",
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableSet.of("r1", "r2", "r3")),
@@ -169,8 +167,7 @@ public class FairlinkMemberFinderTest {
     Assert.assertTrue(result instanceof TestCyclicIterator);
     Assert.assertEquals(1, result.size());
     Assert.assertEquals(
-        ImmutableSet.of(this.addDomain("my-fallback.domain.com", this.baseTestProperties())),
-        ((TestCyclicIterator) result).getElements());
+        ImmutableSet.of("my-fallback.domain.com"), ((TestCyclicIterator) result).getElements());
   }
 
   @Test
@@ -183,7 +180,7 @@ public class FairlinkMemberFinderTest {
                 this.baseTestProperties()),
             this.exclusionTagsExecutor,
             new FixedSetExcludedReplicasFinder(ImmutableSet.of()),
-            new FixedSetReplicasFinder("r1", ImmutableSet.of()),
+            new FixedSetReplicasFinder("my-fallback.domain.com", ImmutableSet.of("r1")),
             strings -> TestCyclicIterator.of(strings),
             (host, properties) -> true);
     this.exclusionTagsExecutor.step();
