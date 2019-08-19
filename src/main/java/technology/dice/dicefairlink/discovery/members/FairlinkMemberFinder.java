@@ -77,7 +77,11 @@ public class FairlinkMemberFinder implements MemberFinder {
     try {
       long before = System.currentTimeMillis();
       final ClusterInfo clusterInfo = this.memberFinder.discoverCluster();
-      this.fallbackEndpoint = Optional.of(clusterInfo.getReadonlyEndpoint());
+      this.fallbackEndpoint =
+          Optional.of(
+              fairlinkConfiguration
+                  .getFallbackEndpoint()
+                  .orElse(clusterInfo.getReadonlyEndpoint()));
       final Set<String> filteredReplicas =
           clusterInfo.getReplicas().stream()
               .filter(db -> !excludedInstanceIds.contains(db))
@@ -90,7 +94,9 @@ public class FairlinkMemberFinder implements MemberFinder {
       final SizedIterator<String> result =
           filteredReplicas.isEmpty()
               ? this.iteratorBuilder.apply(
-                  this.setOf(fairlinkConfiguration.hostname(clusterInfo.getReadonlyEndpoint())))
+                  this.setOf(
+                      fairlinkConfiguration.hostname(
+                          this.fallbackEndpoint.orElse(clusterInfo.getReadonlyEndpoint()))))
               : this.iteratorBuilder.apply(filteredReplicas);
       long after = System.currentTimeMillis();
       LOGGER.info(

@@ -32,11 +32,13 @@ public class FairlinkConfiguration {
   public static final String DISCOVERY_MODE_PROPERTY_NAME = "discoveryMode";
   public static final String VALIDATE_CONNECTION = "validateConnection";
   public static final String CLUSTER_REGION = "auroraClusterRegion";
+  public static final String FALLBACK_ENDPOINT = "fallbackEndpoint";
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private static final Duration DEFAULT_TAG_POLL_INTERVAL = Duration.ofMinutes(2);
   private static final String MYSQL = "mysql";
   private final Region auroraClusterRegion;
   private final Optional<String> replicaEndpointTemplate;
+  private final Optional<String> fallbackEndpoint;
   private final AwsCredentialsProvider awsCredentialsProvider;
   private final Duration replicaPollInterval;
   private final ReplicasDiscoveryMode replicasDiscoveryMode;
@@ -53,7 +55,12 @@ public class FairlinkConfiguration {
     this.replicasDiscoveryMode = this.resolveDiscoveryMode(properties);
     this.replicaEndpointTemplate = this.resolveReplicaEndpointTemplate(properties);
     this.validateConnection = this.resolveValidationConnection(properties);
+    this.fallbackEndpoint = this.resolveFallbackEndpoint(properties);
     this.validateConfiguration();
+  }
+
+  private Optional<String> resolveFallbackEndpoint(Properties properties) {
+    return Optional.ofNullable(properties.getProperty(FALLBACK_ENDPOINT));
   }
 
   private Optional<String> resolveReplicaEndpointTemplate(Properties properties) {
@@ -174,6 +181,10 @@ public class FairlinkConfiguration {
 
   public AwsCredentialsProvider getAwsCredentialsProvider() {
     return awsCredentialsProvider;
+  }
+
+  public Optional<String> getFallbackEndpoint() {
+    return fallbackEndpoint;
   }
 
   public Region getAuroraClusterRegion() {

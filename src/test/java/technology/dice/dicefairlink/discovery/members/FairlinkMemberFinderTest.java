@@ -104,6 +104,30 @@ public class FairlinkMemberFinderTest {
   }
 
   @Test
+  public void noReplicasWithExplicitFallback() throws URISyntaxException {
+    final Properties properties = this.baseTestProperties();
+    properties.setProperty("fallbackEndpoint", "overridden-fallback.domain.com");
+    FairlinkMemberFinder underTest =
+        new FairlinkMemberFinder(
+            new FairlinkConfiguration(properties, new HashMap<>()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com", properties),
+            this.exclusionTagsExecutor,
+            new FixedSetExcludedReplicasFinder(ImmutableList.of()),
+            new FixedSetReplicasFinder("my-fallback.domain.com", ImmutableSet.of()),
+            strings -> TestCyclicIterator.of(strings),
+            (host, p) -> true);
+    this.exclusionTagsExecutor.step();
+    final SizedIterator<String> result = underTest.discoverReplicas();
+
+    Assert.assertTrue(result instanceof TestCyclicIterator);
+    Assert.assertEquals(1, result.size());
+    Assert.assertEquals(
+        ImmutableSet.of(this.addDomain("overridden-fallback.domain.com", properties)),
+        ((TestCyclicIterator) result).getElements());
+  }
+
+  @Test
   public void singleReplicaExcluded() throws URISyntaxException {
     FairlinkMemberFinder underTest =
         new FairlinkMemberFinder(

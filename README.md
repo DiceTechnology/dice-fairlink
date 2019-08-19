@@ -52,7 +52,8 @@ In this example dice-fairlink will use the available mysql driver to establish t
 ### Driver properties:
 ```
 discoveryMode=AWS_API
-replicaEndpointTemplate=%s.-xxxxx.region.amazonaws.com
+replicaEndpointTemplate=%s.-xxxxx.a-region.amazonaws.com
+auroraClusterRegion=a-region
 ```
 
 Dynamic changes to the cluster (node promotions, removals and additions) are automatically detected.
@@ -72,7 +73,9 @@ Contraty to the `AWS API` discovery mode, there is no check that only replicas i
 ### Driver properties:
 ```
 discoveryMode=SQL_MYSQL
-replicaEndpointTemplate=%s.-xxxxx.region.amazonaws.com
+replicaEndpointTemplate=%s.-xxxxx.a-region.amazonaws.com
+fallbackEndpoint=my-cluster.cluster-ro--xxxxx.region.amazonaws.com
+auroraClusterRegion=a-region
 ```
 
 In this example dice-fairlink will use the available mysql driver to establish the connection to the read replica.
@@ -113,7 +116,8 @@ dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/
 Note that the regexes above can be merely `*` depending on how strict you want your permissions to be.
 
 
-When using the `AWS API` discovery mode, the `host` part of the connection string must be the **cluster identifier**. For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc`.
+When using the `AWS API` discovery mode, the `host` part of the connection string must be the **cluster identifier**. For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc`. The cluster's read-only endpoint will be used as 
+fallback should an error occur in refreshing the list of cluster members, unless the device property `fallbackEndpoint` is set (not recommended).
 
 If your cluster uses the `MySQL` engine, it is recommended to use the `MySQL` discovery mode, as it is gentler on the AWS API.
 
@@ -122,7 +126,12 @@ dice-fairlink uses the `information_schema.replica_host_status` table available 
 
 This discovery mode does not require any special IAM user permissions. 
 
-When using the `MySQL` discovery mode, the `host` part of the connection string must be a **cluster endpoint** (either the writer or reader endpoint will work). For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com` or `abc.cluster-ro-xxxxxx.eu-west-1.rds.amazonaws.com`. This host will be used as a fallback in the case clusters without any replicas or if an error occurs.
+When using the `MySQL` discovery mode, the `host` part of the connection string must be a **cluster endpoint**. Even though [AWS's documentation](https://d1.awsstatic.com/whitepapers/RDS/amazon-aurora-connection-management-handbook.pdf) states either the writer or reader endpoint will work - in fact that *any instance* would work - 
+we have observed situations where querying any instance other than the writer will return a **partial list of cluster members**, which will limit the effectiveness of dice-fairlink. 
+For this reason, we recommend using the cluster (writer) endpoint as the hostname of all fairlink's connection strings. To avoid burdening the writer node with read-only statements in the event of a failure, 
+set the `fallbackEndpoint` driver property (see Driver Properties section). 
+
+For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`. This host will be used as a fallback in the case clusters without any replicas or if an error occurs, unless the variable `fallbackEndpoint` is set to the cluster's read endpoint (recommended).
 
 ## Connection validation
 dice-fairlink validates every replica before making it available to the application. This is done once on every discovery cycle. On versions 1.x.x dice-fairlink would rely on the `RDS`API returning instances in the `available` status. On versions 2.x.x dice-fairlink executes `SELECT 1` on each discovered replica, using the underlaying protocol, as specified on the connection string. This validation occurs regardless of the discovery mode, and be disabled via the `validateConnection` property (see Driver Properties section)
@@ -246,7 +255,7 @@ Additionally, the jdbc driver for the underlaying protocol must be available at 
 dice-fairlink uses the AWS RDS Java SDK to obtain information about the cluster, and needs a valid authentication
 source to establish the connection. Two modes of authentication are supported: `default_chain`, `environment` or `basic`. Depending
 on the chosen mode, different driver properties are required. This is the full list of properties:
-- `replicaEndpointTemplate`: the `String.format()` templat to generate the replica valid hostnames, given thir `DBInstanceIdentifier`s. Mandatory.
+- `replicaEndpointTemplate`: the `String.format()` template to generate the replica hostnames, given their `DBInstanceIdentifier`s. The resulting URI (which will maintain all the connetion string's non-hostname parts) is where dice-fairlink will send connections to. Mandatory.
 - `discoveryMode`: `{'AWS_API'|'SQL_MYSQL}`. default: `AWS_API`
 - `auroraClusterRegion`: the AWS region of the cluster to connect to. Mandatory unless environment variable `AWS_DEFAULT_REGION` is set. If both provided,
 the value from data source properties object has priority.
