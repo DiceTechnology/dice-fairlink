@@ -63,7 +63,7 @@ Dynamic changes to the cluster (node promotions, removals and additions) are aut
 In a cluster named `my-cluster` with three read replicas `my-cluster-r1`, `my-cluster-r2` and, `my-cluster-r3`, and
 the following connection string
 ```java
-String connectionString = "jdbc:fairlink:mysql://my-cluster.cluster-xxxxx.region.amazonaws.com/my-schema";
+String connectionString = "jdbc:fairlink:mysql://my-cluster.cluster-xxxxx.a-region.amazonaws.com/my-schema";
 ```
 dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
 and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
