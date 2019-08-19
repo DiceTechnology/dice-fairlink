@@ -256,7 +256,7 @@ dice-fairlink uses the AWS RDS Java SDK to obtain information about the cluster,
 source to establish the connection. Two modes of authentication are supported: `default_chain`, `environment` or `basic`. Depending
 on the chosen mode, different driver properties are required. This is the full list of properties:
 - `replicaEndpointTemplate`: the `String.format()` template to generate the replica hostnames, given their `DBInstanceIdentifier`s. The resulting URI (which will maintain all the connetion string's non-hostname parts) is where dice-fairlink will send connections to. Mandatory.
-`fallbackEndpoint`: the fallback URI to despatch if no replicas are found or if an error occurs. default: the `host` specified in the connection string.
+- `fallbackEndpoint`: the fallback URI to despatch if no replicas are found or if an error occurs. default: the `host` specified in the connection string.
 - `discoveryMode`: `{'AWS_API'|'SQL_MYSQL}`. default: `AWS_API`
 - `auroraClusterRegion`: the AWS region of the cluster to connect to. Mandatory unless environment variable `AWS_DEFAULT_REGION` is set. If both provided,
 the value from data source properties object has priority.
