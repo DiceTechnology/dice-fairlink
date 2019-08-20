@@ -13,8 +13,14 @@ import java.util.regex.Pattern;
 
 public class FairlinkConnectionString {
   private static final String DRIVER_PROTOCOL = "fairlink";
-  private static final Pattern driverPattern =
+  private static final String DRIVER_PROTOCOL_BACKWARD_COMPATIBILITY = "auroraro";
+  private static final Pattern DRIVER_PATTERN =
       Pattern.compile("jdbc:" + DRIVER_PROTOCOL + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
+  private static final Pattern DRIVER_PATTERN_BACKWARD_COMPATIBILITY =
+      Pattern.compile(
+          "jdbc:"
+              + DRIVER_PROTOCOL_BACKWARD_COMPATIBILITY
+              + ":(?<delegate>[^:]*):(?<uri>.*\\/\\/.+)");
   private static final String JDBC_PREFIX = "jdbc";
   private final String delegateProtocol;
   private final String fairlinKUri;
@@ -26,13 +32,20 @@ public class FairlinkConnectionString {
     this.fairlinKUri = connectionString;
     this.properties = properties;
 
-    Matcher matcher = driverPattern.matcher(connectionString);
-    if (!matcher.matches()) {
+    Matcher matcher = DRIVER_PATTERN.matcher(connectionString);
+    Matcher matcherBackwardCompatibility =
+        DRIVER_PATTERN_BACKWARD_COMPATIBILITY.matcher(connectionString);
+    if (matcher.matches()) {
+      this.delegateProtocol = matcher.group("delegate");
+      this.delegateUri = new URI(this.delegateProtocol + ":" + matcher.group("uri"));
+    } else if (matcherBackwardCompatibility.matches()) {
+      this.delegateProtocol = matcherBackwardCompatibility.group("delegate");
+      this.delegateUri =
+          new URI(this.delegateProtocol + ":" + matcherBackwardCompatibility.group("uri"));
+    } else {
       throw new IllegalArgumentException(
           connectionString + " is not a valid fairlink connection string");
     }
-    this.delegateProtocol = matcher.group("delegate");
-    this.delegateUri = new URI(this.delegateProtocol + ":" + matcher.group("uri"));
   }
 
   public String getDelegateProtocol() {
@@ -69,7 +82,8 @@ public class FairlinkConnectionString {
   }
 
   public static boolean accepts(String url) {
-    Matcher matcher = driverPattern.matcher(url);
-    return matcher.matches();
+    Matcher matcher = DRIVER_PATTERN.matcher(url);
+    Matcher matcherBackwardCompatibility = DRIVER_PATTERN_BACKWARD_COMPATIBILITY.matcher(url);
+    return matcher.matches() || matcherBackwardCompatibility.matches();
   }
 }
