@@ -28,6 +28,26 @@ public class FairlinkConnectionStringTest {
   }
 
   @Test
+  public void validBackwardCompatibility() throws URISyntaxException {
+    String connString =
+        "jdbc:auroraro:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
+    final Properties properties = new Properties();
+    properties.setProperty("a", "b");
+    final FairlinkConnectionString underTest = new FairlinkConnectionString(connString, properties);
+    Assert.assertEquals(connString, underTest.getFairlinkUri());
+    Assert.assertEquals("fairlinktestdriver", underTest.getDelegateProtocol());
+    Assert.assertEquals("aa", underTest.getHost());
+    Assert.assertEquals(
+        "jdbc:fairlinktestdriver://anotherHost:123/db?param1=123&param2=true&param3=abc",
+        underTest.delegateConnectionString("anotherHost"));
+    Assert.assertEquals(
+        "jdbc:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc",
+        underTest.delegateConnectionString());
+    Assert.assertEquals(1, underTest.getProperties().size());
+    Assert.assertEquals("b", underTest.getProperties().getProperty("a"));
+  }
+
+  @Test
   public void validHostInDifferentPort() throws URISyntaxException {
     String connString =
         "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc";
@@ -52,6 +72,13 @@ public class FairlinkConnectionStringTest {
     Assert.assertTrue(
         FairlinkConnectionString.accepts(
             "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc"));
+  }
+
+  @Test
+  public void acceptsBackwardsCompatibility() {
+    Assert.assertTrue(
+        FairlinkConnectionString.accepts(
+            "jdbc:auroraro:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc"));
   }
 
   @Test

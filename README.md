@@ -20,7 +20,7 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 Version 2.x.x of dice-fairlink is substancially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
 
 Changes from 1.x.x:
-- Renamed the sub-protocol from `auroraro` to `fairlink`
+- Renamed the sub-protocol from `auroraro` to `fairlink` (`aurora` is still accepted for backward compatibility and will be removed in version 2.1.0)
 - Added SQL discovery (only for MySQL. Other underlaying drivers can still use the AWS API)
 - Added a randomised poller start delay to avoid swarming the AWS API if many applications using dice fairlink are started at the same time
 - Refactored to make it more testable
@@ -256,7 +256,7 @@ dice-fairlink uses the AWS RDS Java SDK to obtain information about the cluster,
 source to establish the connection. Two modes of authentication are supported: `default_chain`, `environment` or `basic`. Depending
 on the chosen mode, different driver properties are required. This is the full list of properties:
 - `replicaEndpointTemplate`: the `String.format()` template to generate the replica hostnames, given their `DBInstanceIdentifier`s. The resulting URI (which will maintain all the connetion string's non-hostname parts) is where dice-fairlink will send connections to. Mandatory.
-`fallbackEndpoint`: the fallback URI to despatch if no replicas are found or if an error occurs. default: the `host` specified in the connection string.
+- `fallbackEndpoint`: the fallback URI to despatch if no replicas are found or if an error occurs. default: the `host` specified in the connection string.
 - `discoveryMode`: `{'AWS_API'|'SQL_MYSQL}`. default: `AWS_API`
 - `auroraClusterRegion`: the AWS region of the cluster to connect to. Mandatory unless environment variable `AWS_DEFAULT_REGION` is set. If both provided,
 the value from data source properties object has priority.
