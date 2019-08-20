@@ -5,6 +5,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
+import java.net.URISyntaxException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Assert;
 import org.junit.Before;
@@ -104,13 +105,13 @@ public class AuroraReadReplicasDriverEndToEndTest {
   }
 
   @Test
-  public void f() throws SQLException {
+  public void readFromTwoReplicas() throws SQLException {
     CyclicIterator<String>[] i = new CyclicIterator[1];
     AuroraReadReplicasDriver underTest =
         new AuroraReadReplicasDriver(
             () -> memberDiscoveryExecutor,
             () -> exclusionTagsExecutor,
-                ()->new FixedSetExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3")),
+            () -> new FixedSetExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3")),
             null,
             null,
             new Function<Collection<String>, SizedIterator<String>>() {
@@ -152,6 +153,119 @@ public class AuroraReadReplicasDriverEndToEndTest {
     Assert.assertEquals(
         2, foundData.stream().filter(d -> d.getB().equalsIgnoreCase("SLAVE1")).count());
     Assert.assertFalse(
+        foundData.stream()
+            .filter(d -> d.getB().equalsIgnoreCase("SLAVE2"))
+            .findFirst()
+            .isPresent());
+  }
+
+  @Test
+  public void refreshBeforeScheduledDiscovery() throws SQLException, URISyntaxException {
+    CyclicIterator<String>[] i = new CyclicIterator[1];
+    AuroraReadReplicasDriver underTest =
+        new AuroraReadReplicasDriver(
+            () -> memberDiscoveryExecutor,
+            () -> exclusionTagsExecutor,
+            () -> new FixedSetExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3")),
+            null,
+            null,
+            new Function<Collection<String>, SizedIterator<String>>() {
+              @Nullable
+              @Override
+              public SizedIterator<String> apply(@Nullable Collection<String> strings) {
+                final CyclicIterator<String> iterator = TestCyclicIterator.of(strings);
+                i[0] = iterator;
+                return iterator;
+              }
+            });
+
+    List<Data> foundData = readTwice(underTest);
+    Assert.assertEquals(2, i[0].size());
+    Assert.assertEquals(4, foundData.size());
+    Assert.assertTrue(
+        foundData.stream()
+            .filter(d -> d.getB().equalsIgnoreCase("SLAVE1"))
+            .findFirst()
+            .isPresent());
+    Assert.assertTrue(
+        foundData.stream()
+            .filter(d -> d.getB().equalsIgnoreCase("SLAVE2"))
+            .findFirst()
+            .isPresent());
+
+    final Connection masterConnection =
+        DriverManager.getConnection(master.getJdbcUrl(), baseTestProperties());
+    masterConnection
+        .createStatement()
+        .executeUpdate("DELETE from replica_host_status WHERE SESSION_ID='another-sesion2'");
+    masterConnection.close();
+
+    underTest.refreshReplicas(master.getJdbcUrl().replace("mysql", "fairlink:mysql"));
+    foundData = readTwice(underTest);
+
+    Assert.assertEquals(1, i[0].size());
+    Assert.assertEquals(4, foundData.size());
+    Assert.assertEquals(
+        2, foundData.stream().filter(d -> d.getB().equalsIgnoreCase("SLAVE1")).count());
+    Assert.assertFalse(
+        foundData.stream()
+            .filter(d -> d.getB().equalsIgnoreCase("SLAVE2"))
+            .findFirst()
+            .isPresent());
+  }
+
+  @Test
+  public void refreshUnexistingEndpoint() throws SQLException, URISyntaxException {
+    CyclicIterator<String>[] i = new CyclicIterator[1];
+    AuroraReadReplicasDriver underTest =
+        new AuroraReadReplicasDriver(
+            () -> memberDiscoveryExecutor,
+            () -> exclusionTagsExecutor,
+            () -> new FixedSetExcludedReplicasFinder(ImmutableSet.of("replica1", "replica3")),
+            null,
+            null,
+            new Function<Collection<String>, SizedIterator<String>>() {
+              @Nullable
+              @Override
+              public SizedIterator<String> apply(@Nullable Collection<String> strings) {
+                final CyclicIterator<String> iterator = TestCyclicIterator.of(strings);
+                i[0] = iterator;
+                return iterator;
+              }
+            });
+
+    List<Data> foundData = readTwice(underTest);
+    Assert.assertEquals(2, i[0].size());
+    Assert.assertEquals(4, foundData.size());
+    Assert.assertTrue(
+        foundData.stream()
+            .filter(d -> d.getB().equalsIgnoreCase("SLAVE1"))
+            .findFirst()
+            .isPresent());
+    Assert.assertTrue(
+        foundData.stream()
+            .filter(d -> d.getB().equalsIgnoreCase("SLAVE2"))
+            .findFirst()
+            .isPresent());
+
+    final Connection masterConnection =
+        DriverManager.getConnection(master.getJdbcUrl(), baseTestProperties());
+    masterConnection
+        .createStatement()
+        .executeUpdate("DELETE from replica_host_status WHERE SESSION_ID='another-sesion2'");
+    masterConnection.close();
+
+    underTest.refreshReplicas(slave1.getJdbcUrl().replace("mysql", "fairlink:mysql"));
+    foundData = readTwice(underTest);
+
+    Assert.assertEquals(2, i[0].size());
+    Assert.assertEquals(4, foundData.size());
+    Assert.assertTrue(
+        foundData.stream()
+            .filter(d -> d.getB().equalsIgnoreCase("SLAVE1"))
+            .findFirst()
+            .isPresent());
+    Assert.assertTrue(
         foundData.stream()
             .filter(d -> d.getB().equalsIgnoreCase("SLAVE2"))
             .findFirst()

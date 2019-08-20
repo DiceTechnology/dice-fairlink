@@ -5,21 +5,6 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import software.amazon.awssdk.regions.Region;
-import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
-import technology.dice.dicefairlink.ParsedUrl;
-import technology.dice.dicefairlink.config.FairlinkConfiguration;
-import technology.dice.dicefairlink.discovery.members.FairlinkMemberFinder;
-import technology.dice.dicefairlink.discovery.members.JdbcConnectionValidator;
-import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
-import technology.dice.dicefairlink.discovery.members.ReplicaValidator;
-import technology.dice.dicefairlink.discovery.members.awsapi.AwsApiReplicasFinder;
-import technology.dice.dicefairlink.discovery.members.sql.MySQLReplicasFinder;
-import technology.dice.dicefairlink.discovery.tags.TagFilter;
-import technology.dice.dicefairlink.discovery.tags.awsapi.ResourceGroupApiTagDiscovery;
-import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
-import technology.dice.dicefairlink.iterators.SizedIterator;
-
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -38,6 +23,20 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import software.amazon.awssdk.regions.Region;
+import technology.dice.dicefairlink.AuroraReadonlyEndpoint;
+import technology.dice.dicefairlink.ParsedUrl;
+import technology.dice.dicefairlink.config.FairlinkConfiguration;
+import technology.dice.dicefairlink.discovery.members.FairlinkMemberFinder;
+import technology.dice.dicefairlink.discovery.members.JdbcConnectionValidator;
+import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
+import technology.dice.dicefairlink.discovery.members.ReplicaValidator;
+import technology.dice.dicefairlink.discovery.members.awsapi.AwsApiReplicasFinder;
+import technology.dice.dicefairlink.discovery.members.sql.MySQLReplicasFinder;
+import technology.dice.dicefairlink.discovery.tags.TagFilter;
+import technology.dice.dicefairlink.discovery.tags.awsapi.ResourceGroupApiTagDiscovery;
+import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
+import technology.dice.dicefairlink.iterators.SizedIterator;
 
 public class AuroraReadReplicasDriver implements Driver {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadReplicasDriver.class.getName());
@@ -201,6 +200,15 @@ public class AuroraReadReplicasDriver implements Driver {
     } catch (NoSuchElementException | IllegalArgumentException e) {
       LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + url, e);
       return Optional.empty();
+    }
+  }
+
+  public void refreshReplicas(String url) throws URISyntaxException {
+    FairlinkConnectionString fairlinkConnectionString =
+        new FairlinkConnectionString(url, new Properties());
+    final AuroraReadonlyEndpoint auroraReadonlyEndpoint = this.auroraClusters.get(url);
+    if (auroraReadonlyEndpoint != null) {
+      auroraReadonlyEndpoint.refresh();
     }
   }
 

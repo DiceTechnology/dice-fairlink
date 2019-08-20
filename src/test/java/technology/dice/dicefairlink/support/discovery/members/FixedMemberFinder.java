@@ -7,10 +7,14 @@ import technology.dice.dicefairlink.support.iterators.TestCyclicIterator;
 import java.util.Collection;
 
 public class FixedMemberFinder implements MemberFinder {
-  private final Collection<String> members;
+  private Collection<String> members;
 
   public FixedMemberFinder(Collection<String> members) {
     this.members = members;
+  }
+
+  public void updateMembers(Collection<String> replicas) {
+    this.members = replicas;
   }
 
   @Override
