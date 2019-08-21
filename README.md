@@ -15,6 +15,7 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 - Add software.amazon.awssdk:rds and software.amazon.awssdk:resourcegroupstaggingapi as dependencies of your project
 - Add `fairlink` as a jdbc sub-protocol to your connection string's schema
 - If using the AWS API discovery mode, change your connection string's host to the name of your AWS Aurora cluster. Use the cluster's read-only endpoint otherwise
+- Ensure the code running dice-fairlink as the correct IAM policies (see sections Member Discovery and Exclusion Discovery)
 
 # Here for version 1.x.x ?
 Version 2.x.x of dice-fairlink is substancially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
