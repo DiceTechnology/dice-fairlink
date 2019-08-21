@@ -52,6 +52,24 @@ public class AuroraReadonlyEndpointTest {
   }
 
   @Test
+  public void refresh() {
+    final FixedMemberFinder finder = new FixedMemberFinder(ImmutableSet.of("r1"));
+    AuroraReadonlyEndpoint underTest =
+        new AuroraReadonlyEndpoint(
+            new FairlinkConfiguration(this.baseTestProperties(), new HashMap<>()),
+            finder,
+            new StepByStepExecutor(1));
+    Assert.assertEquals("r1", underTest.getNextReplica());
+    Assert.assertEquals("r1", underTest.getNextReplica());
+    Assert.assertEquals("r1", underTest.getNextReplica());
+    finder.updateMembers(ImmutableList.of("r3", "r4"));
+    underTest.refresh();
+    Assert.assertEquals("r3", underTest.getNextReplica());
+    Assert.assertEquals("r4", underTest.getNextReplica());
+    Assert.assertEquals("r3", underTest.getNextReplica());
+  }
+
+  @Test
   public void triesToSkipRepeated() {
     AuroraReadonlyEndpoint underTest =
         new AuroraReadonlyEndpoint(

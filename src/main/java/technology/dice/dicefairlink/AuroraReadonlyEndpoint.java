@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 
 public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
+  private final MemberFinder fairlinkMemberFinder;
   private SizedIterator<String> replicas;
   private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
@@ -26,6 +27,7 @@ public class AuroraReadonlyEndpoint {
       MemberFinder fairlinkMemberFinder,
       ScheduledExecutorService replicaDiscoveryExecutor) {
 
+    this.fairlinkMemberFinder = fairlinkMemberFinder;
     replicas = fairlinkMemberFinder.init();
     final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
     LOGGER.log(Level.INFO, "Starting cluster member discovery with {0} delay.", startJitter);
@@ -44,5 +46,9 @@ public class AuroraReadonlyEndpoint {
     }
     lastReplica.set(nextReplica);
     return nextReplica;
+  }
+
+  public void refresh() {
+    replicas = this.fairlinkMemberFinder.discoverReplicas();
   }
 }
