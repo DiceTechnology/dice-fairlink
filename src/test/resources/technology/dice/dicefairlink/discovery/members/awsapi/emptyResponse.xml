@@ -1,0 +1,8 @@
+<DescribeDBClustersResponse xmlns="http://rds.amazonaws.com/doc/2014-10-31/">
+  <DescribeDBClustersResult>
+    <DBClusters/>
+  </DescribeDBClustersResult>
+  <ResponseMetadata>
+    <RequestId>a0ccfa67-61ec-445d-9304-4a17e9787522</RequestId>
+  </ResponseMetadata>
+</DescribeDBClustersResponse>
