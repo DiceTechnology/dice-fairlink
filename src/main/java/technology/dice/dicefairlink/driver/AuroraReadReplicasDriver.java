@@ -203,9 +203,7 @@ public class AuroraReadReplicasDriver implements Driver {
     }
   }
 
-  public void refreshReplicas(String url) throws URISyntaxException {
-    FairlinkConnectionString fairlinkConnectionString =
-        new FairlinkConnectionString(url, new Properties());
+  public void refreshReplicas(String url) {
     final AuroraReadonlyEndpoint auroraReadonlyEndpoint = this.auroraClusters.get(url);
     if (auroraReadonlyEndpoint != null) {
       auroraReadonlyEndpoint.refresh();
