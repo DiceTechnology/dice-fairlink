@@ -46,7 +46,7 @@ String connectionString = "jdbc:fairlink:mysql://my-cluster/my-schema";
 dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
 and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
 
-Only replicas in the `available` state will be used. Optionally, a connection test is also performed before the replica is returned to the application. This is controlled by the `validateConnection` property (see Driver Properties section).
+A connection test is performed before the replica is returned to the application. This is controlled by the `validateConnection` property (see Driver Properties section).
 
 In this example dice-fairlink will use the available mysql driver to establish the connection to the read replica.
 
@@ -69,7 +69,7 @@ String connectionString = "jdbc:fairlink:mysql://my-cluster.cluster-xxxxx.a-regi
 dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
 and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
 
-Contraty to the `AWS API` discovery mode, there is no check that only replicas in the `available` state will be used. It is recommended to always enable the connection test via the `validateConnection` (activated by dfault) property (see Driver Properties section).
+A connection test is performed before the replica is returned to the application. This is controlled by the `validateConnection` property (see Driver Properties section).
 
 ### Driver properties:
 ```
