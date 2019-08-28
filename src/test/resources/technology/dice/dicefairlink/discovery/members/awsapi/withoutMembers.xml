@@ -38,11 +38,11 @@
         <DBSubnetGroup>dev-consumer</DBSubnetGroup>
         <VpcSecurityGroups>
           <VpcSecurityGroupMembership>
-            <VpcSecurityGroupId>sg-03a5a99b0ec5fc04a</VpcSecurityGroupId>
+            <VpcSecurityGroupId>securityGroupId</VpcSecurityGroupId>
             <Status>active</Status>
           </VpcSecurityGroupMembership>
         </VpcSecurityGroups>
-        <HostedZoneId>Z29XKXDKYMONMX</HostedZoneId>
+        <HostedZoneId>hostedZoneId</HostedZoneId>
         <PreferredMaintenanceWindow>sat:22:13-sat:22:43</PreferredMaintenanceWindow>
         <DBClusterParameterGroup>default.aurora-mysql5.7</DBClusterParameterGroup>
         <CopyTagsToSnapshot>false</CopyTagsToSnapshot>
