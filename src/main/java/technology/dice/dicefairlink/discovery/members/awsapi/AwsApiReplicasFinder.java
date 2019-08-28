@@ -6,8 +6,6 @@
 package technology.dice.dicefairlink.discovery.members.awsapi;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -26,7 +24,6 @@ import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
 public class AwsApiReplicasFinder implements MemberFinderMethod {
   private static final Logger LOGGER = Logger.getLogger(AwsApiReplicasFinder.class.getName());
-  private static final Set<String> EMPTY_SET = Collections.unmodifiableSet(new HashSet<>(0));
   private final String clusterId;
   private final RdsClient client;
 
