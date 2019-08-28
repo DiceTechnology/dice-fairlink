@@ -21,7 +21,7 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 Version 2.x.x of dice-fairlink is substancially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
 
 Changes from 1.x.x:
-- Renamed the sub-protocol from `auroraro` to `fairlink` (`aurora` is still accepted for backward compatibility and will be removed in version 2.1.0)
+- Renamed the sub-protocol from `auroraro` to `fairlink` (`aurora` is still accepted for backward compatibility and will be removed in version 3.0.0)
 - Added SQL discovery (only for MySQL. Other underlaying drivers can still use the AWS API)
 - Added a randomised poller start delay to avoid swarming the AWS API if many applications using dice fairlink are started at the same time
 - Refactored to make it more testable
@@ -87,7 +87,7 @@ Dynamic changes to the cluster (node promotions, removals and additions) are aut
 # Member discovery
 dice-fairlink offers two options to discover the members of an Aurora cluster. It polls for any changes and update its internal state with the configured frequency (see Driver Properties section). The driver does this once when the driver is loaded, and enters the periodic poll cycle This after a random delay of up to 10 seconds. This is to avoid, in scenarios of large clusters of applications using dice-fairlink, exceeding the rate limits imposed by AWS. 
 
-Versions 1.x.x of dice-fairlink are very prone to this problem, as it maks 1+2*number_of_replicas (`O(n)`) calls on each cycle. Versions 2.x.x make 2 (`O(1)`) calls per cycle when using `AWS API` discovery mode, and 0 calls per cycle when using `MySQL` mode. See the Exclusions section to learn about an additional call on both discovery modes.
+Versions 1.x.x of dice-fairlink are very prone to this problem, as they make 1+2*number_of_replicas (`O(n)`) calls on each cycle. Versions 2.x.x make 1 (`O(1)`) call per cycle when using `AWS API` discovery mode, and 0 calls per cycle when using `MySQL` mode. See the Exclusions section to learn about an additional call on both discovery modes.
 
 ## AWS API Mode
 dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/Welcome.html) to discover the members of a cluster, and to determine which cluster member is the writer. Unfortunately this requires two separate calls that are made in sequence. To use this discovery mode, the code must be executed by an IAM user with the following policy:
@@ -100,15 +100,6 @@ dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/
       ],
       "Resource":[
          "arn:aws:rds:*:<account_id>:cluster:<cluster_name_regex>"
-      ]
-   },
-   {
-      "Effect":"Allow",
-      "Action":[
-         "rds:DescribeDBInstances"
-      ],
-      "Resource":[
-         "arn:aws:rds:*:<account_id>:db:<member_name_regex>"
       ]
    }
 ]
