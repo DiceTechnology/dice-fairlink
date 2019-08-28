@@ -18,7 +18,7 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 - Ensure the code running dice-fairlink as the correct IAM policies (see sections Member Discovery and Exclusion Discovery)
 
 # Here for version 1.x.x ?
-Version 2.x.x of dice-fairlink is substancially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
+Version 2.x.x of dice-fairlink is substantially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
 
 Changes from 1.x.x:
 - Renamed the sub-protocol from `auroraro` to `fairlink` (`aurora` is still accepted for backward compatibility and will be removed in version 3.0.0)
