@@ -36,9 +36,11 @@ public class FairlinkConfiguration {
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private static final Duration DEFAULT_TAG_POLL_INTERVAL = Duration.ofMinutes(2);
   private static final String MYSQL = "mysql";
+  private static final String AWS_ENDPOINT_OVERRIDE = "awsEndpointOverride";
   private final Region auroraClusterRegion;
   private final Optional<String> replicaEndpointTemplate;
   private final Optional<String> fallbackEndpoint;
+  private final Optional<String> awsEndpointOverride;
   private final AwsCredentialsProvider awsCredentialsProvider;
   private final Duration replicaPollInterval;
   private final ReplicasDiscoveryMode replicasDiscoveryMode;
@@ -56,7 +58,12 @@ public class FairlinkConfiguration {
     this.replicaEndpointTemplate = this.resolveReplicaEndpointTemplate(properties);
     this.validateConnection = this.resolveValidationConnection(properties);
     this.fallbackEndpoint = this.resolveFallbackEndpoint(properties);
+    this.awsEndpointOverride = this.resolveAwsEndpointOverride(properties);
     this.validateConfiguration();
+  }
+
+  private Optional<String> resolveAwsEndpointOverride(Properties properties) {
+    return Optional.ofNullable(properties.getProperty(AWS_ENDPOINT_OVERRIDE));
   }
 
   private Optional<String> resolveFallbackEndpoint(Properties properties) {
@@ -177,6 +184,10 @@ public class FairlinkConfiguration {
 
   public Duration getTagsPollerInterval() {
     return tagsPollerInterval;
+  }
+
+  public Optional<String> getAwsEndpointOverride() {
+    return awsEndpointOverride;
   }
 
   public AwsCredentialsProvider getAwsCredentialsProvider() {
