@@ -27,6 +27,9 @@ public class AwsApiReplicasFinderTest {
   private Properties baseTestProperties() {
     Properties p = new Properties();
     p.setProperty("auroraClusterRegion", "eu-west-1");
+    p.setProperty("auroraDiscoveryAuthMode", "basic");
+    p.setProperty("auroraDiscoveryKeyId", "keyId");
+    p.setProperty("auroraDiscoverKeySecret", "keySecret");
     p.setProperty("discoveryMode", "AWS_API");
     p.setProperty("replicaPollInterval", "5");
     p.setProperty("tagsPollInterval", "10");
