@@ -198,7 +198,6 @@ public class AuroraReadReplicasDriver implements Driver {
       LOGGER.log(Level.FINE, "Can not get replicas for cluster URI: " + url, e);
       return Optional.empty();
     } catch (NoSuchElementException | IllegalArgumentException e) {
-      LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + url, e);
       return Optional.empty();
     }
   }
