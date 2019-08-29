@@ -5,18 +5,17 @@
  */
 package technology.dice.dicefairlink.driver;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import technology.dice.dicefairlink.support.driver.TestDriver;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Logger;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import technology.dice.dicefairlink.support.driver.TestDriver;
 
 public class AuroraReadReplicasDriverTest {
   private static final String VALID_JDBC_URL =
@@ -32,7 +31,7 @@ public class AuroraReadReplicasDriverTest {
     final AuroraReadReplicasDriver underTest = new AuroraReadReplicasDriver();
     Assert.assertFalse(underTest.jdbcCompliant());
     Assert.assertEquals(2, underTest.getMajorVersion());
-    Assert.assertEquals(0, underTest.getMinorVersion());
+    Assert.assertEquals(1, underTest.getMinorVersion());
     Assert.assertArrayEquals(
         new DriverPropertyInfo[] {}, underTest.getPropertyInfo(VALID_JDBC_URL, new Properties()));
     Assert.assertEquals(Logger.getLogger(""), underTest.getParentLogger());

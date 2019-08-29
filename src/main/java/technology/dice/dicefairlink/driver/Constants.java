@@ -7,5 +7,5 @@ package technology.dice.dicefairlink.driver;
 
 public class Constants {
   public static final int AURORA_RO_MAJOR_VERSION = 2;
-  public static final int AURORA_RO_MINOR_VERSION = 0;
+  public static final int AURORA_RO_MINOR_VERSION = 1;
 }

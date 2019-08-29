@@ -5,7 +5,9 @@
  */
 package technology.dice.dicefairlink.discovery.tags.awsapi;
 
+import java.net.URI;
 import software.amazon.awssdk.services.resourcegroupstaggingapi.ResourceGroupsTaggingApiClient;
+import software.amazon.awssdk.services.resourcegroupstaggingapi.ResourceGroupsTaggingApiClientBuilder;
 import software.amazon.awssdk.services.resourcegroupstaggingapi.model.GetResourcesRequest;
 import software.amazon.awssdk.services.resourcegroupstaggingapi.paginators.GetResourcesIterable;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
@@ -30,11 +32,15 @@ public class ResourceGroupApiTagDiscovery implements TagFilter {
   private final Collection<String> typeFilter;
 
   public ResourceGroupApiTagDiscovery(FairlinkConfiguration fairlinkConfiguration) {
-    this.client =
+
+    final ResourceGroupsTaggingApiClientBuilder clientBuilder =
         ResourceGroupsTaggingApiClient.builder()
             .region(fairlinkConfiguration.getAuroraClusterRegion())
-            .credentialsProvider(fairlinkConfiguration.getAwsCredentialsProvider())
-            .build();
+            .credentialsProvider(fairlinkConfiguration.getAwsCredentialsProvider());
+    fairlinkConfiguration
+        .getAwsEndpointOverride()
+        .ifPresent(o -> clientBuilder.endpointOverride(URI.create(o)));
+    this.client = clientBuilder.build();
     Collection<String> temporaryTypeFilter = new ArrayList<>(1);
     temporaryTypeFilter.add(RDS_DB_INSTANCE_FILTER);
     this.typeFilter = Collections.unmodifiableCollection(temporaryTypeFilter);
