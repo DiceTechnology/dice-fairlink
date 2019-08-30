@@ -147,7 +147,7 @@ public class AuroraReadReplicasDriver implements Driver {
       try {
       fairlinkConnectionString =
           new FairlinkConnectionString(url, properties);
-      } catch (IllegalArgumentException e){
+      } catch (IllegalArgumentException e) {
         return Optional.empty();
       }
 
