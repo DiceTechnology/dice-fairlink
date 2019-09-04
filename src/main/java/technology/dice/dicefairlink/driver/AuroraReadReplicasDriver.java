@@ -141,10 +141,15 @@ public class AuroraReadReplicasDriver implements Driver {
   private Optional<ParsedUrl> parseUrlAndCacheDriver(final String url, final Properties properties)
       throws SQLException {
     LOGGER.log(Level.FINE, "URI: {0}", url);
-    try {
+    FairlinkConnectionString fairlinkConnectionString;
 
-      FairlinkConnectionString fairlinkConnectionString =
+    try {
+      try {
+      fairlinkConnectionString =
           new FairlinkConnectionString(url, properties);
+      } catch (IllegalArgumentException e) {
+        return Optional.empty();
+      }
 
       if (!this.auroraClusters.containsKey(fairlinkConnectionString.getFairlinkUri())) {
         FairlinkConfiguration fairlinkConfiguration =
@@ -197,8 +202,7 @@ public class AuroraReadReplicasDriver implements Driver {
     } catch (URISyntaxException e) {
       LOGGER.log(Level.FINE, "Can not get replicas for cluster URI: " + url, e);
       return Optional.empty();
-    } catch (NoSuchElementException | IllegalArgumentException e) {
-      LOGGER.log(Level.SEVERE, "Can not get replicas for cluster URI: " + url, e);
+    } catch (NoSuchElementException e) {
       return Optional.empty();
     }
   }

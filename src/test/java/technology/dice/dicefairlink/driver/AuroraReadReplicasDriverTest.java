@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.logging.Logger;
 import org.junit.Assert;
@@ -126,5 +127,25 @@ public class AuroraReadReplicasDriverTest {
   @Test
   public void staticLoad() throws ClassNotFoundException {
     Class.forName(AuroraReadReplicasDriver.class.getCanonicalName());
+  }
+
+  @Test
+  public void throwsNoSuchElementException() throws Exception {
+
+    AuroraReadReplicasDriver underTest =
+            new AuroraReadReplicasDriver(
+                    () -> {throw new NoSuchElementException();},
+                    () -> {throw new NoSuchElementException();},
+                    null,
+                    null,
+                    null,
+                    null
+                    );
+    Properties properties = new Properties();
+    properties.setProperty("discoveryMode", "AWS_API");
+    properties.setProperty("auroraClusterRegion", "eu-west-1");
+    properties.setProperty("replicaEndpointTemplate", "%s");
+
+    Assert.assertNull(underTest.connect("jdbc:fairlink:fairlinktestdriver://host:3306/id?useSSL=false", properties));
   }
 }
