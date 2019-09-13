@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.resourcegroupstaggingapi.model.GetResourc
 public class ResourceGroupApiTagDiscoveryTestIT {
 
   // Here to capture the http wire traffic. Not automatically ran as part of CI
- // @Test
+  @Test
   public void makeAPicall() {
     final ResourceGroupsTaggingApiClient client =
         ResourceGroupsTaggingApiClient.builder()

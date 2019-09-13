@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.rds.model.DescribeDbClustersRequest;
 
 public class AwsApiReplicasFinderTestIT {
   // Here to capture the http wire traffic. Not automatically ran as part of CI
-//  @Test
+  @Test
   public void makeDescribeClusterApiCall() {
     final RdsClient client =
         RdsClient.builder()
