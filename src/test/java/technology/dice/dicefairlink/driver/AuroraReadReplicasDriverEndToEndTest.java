@@ -13,7 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.containers.MySQLContainer;
 import technology.dice.dicefairlink.StepByStepExecutor;
-import technology.dice.dicefairlink.discovery.members.sql.SqlReplicasFinderTest;
+import technology.dice.dicefairlink.discovery.members.sql.MySqlReplicasFinderTest;
 import technology.dice.dicefairlink.iterators.CyclicIterator;
 import technology.dice.dicefairlink.iterators.SizedIterator;
 import technology.dice.dicefairlink.support.discovery.tags.FixedSetExcludedReplicasFinder;
@@ -48,7 +48,7 @@ public class AuroraReadReplicasDriverEndToEndTest {
     p.setProperty("user", container.getUsername());
     p.setProperty("password", container.getPassword());
     final InputStream resourceAsStream =
-        SqlReplicasFinderTest.class.getClassLoader().getResourceAsStream(path);
+        MySqlReplicasFinderTest.class.getClassLoader().getResourceAsStream(path);
     String schemaSql =
         CharStreams.toString(new InputStreamReader(resourceAsStream, Charsets.UTF_8));
     for (Map.Entry<String, String> replace : replacing.entrySet()) {
@@ -62,20 +62,20 @@ public class AuroraReadReplicasDriverEndToEndTest {
 
   @Before
   public void before() throws IOException, SQLException {
-    this.runScript(master, "technology/dice/dicefairlink/discovery/members/sql/schema.sql");
-    this.runScript(slave1, "technology/dice/dicefairlink/discovery/members/sql/schema.sql");
-    this.runScript(slave2, "technology/dice/dicefairlink/discovery/members/sql/schema.sql");
+    this.runScript(master, "technology/dice/dicefairlink/discovery/members/sql/mysql/schema.sql");
+    this.runScript(slave1, "technology/dice/dicefairlink/discovery/members/sql/mysql/schema.sql");
+    this.runScript(slave2, "technology/dice/dicefairlink/discovery/members/sql/mysql/schema.sql");
     this.runScript(
         master,
-        "technology/dice/dicefairlink/discovery/members/sql/3replicasPorts.sql",
+            "technology/dice/dicefairlink/discovery/members/sql/mysql/3replicasPorts.sql",
         ImmutableMap.of(
             "__PORT_SLAVE_1__",
             slave1.getFirstMappedPort().toString(),
             "__PORT_SLAVE_2__",
             slave2.getFirstMappedPort().toString()));
-    this.runScript(master, "technology/dice/dicefairlink/discovery/members/sql/masterData.sql");
-    this.runScript(slave1, "technology/dice/dicefairlink/discovery/members/sql/slave1Data.sql");
-    this.runScript(slave2, "technology/dice/dicefairlink/discovery/members/sql/slave2Data.sql");
+    this.runScript(master, "technology/dice/dicefairlink/discovery/members/sql/mysql/masterData.sql");
+    this.runScript(slave1, "technology/dice/dicefairlink/discovery/members/sql/mysql/slave1Data.sql");
+    this.runScript(slave2, "technology/dice/dicefairlink/discovery/members/sql/mysql/slave2Data.sql");
   }
 
   private StepByStepExecutor exclusionTagsExecutor;

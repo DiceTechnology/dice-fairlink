@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableSet;
 import technology.dice.dicefairlink.discovery.members.ClusterInfo;
@@ -20,12 +21,12 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-public class SqlReplicasFinderTest {
-  @Rule public MySQLContainer mysql = new MySQLContainer();
+public class MySqlReplicasFinderTest {
+  @Rule public JdbcDatabaseContainer mysql = new MySQLContainer();
 
   @Before
   public void before() throws IOException, SQLException {
-    this.runScript("technology/dice/dicefairlink/discovery/members/sql/schema.sql");
+    this.runScript("technology/dice/dicefairlink/discovery/members/sql/mysql/schema.sql");
   }
 
   private void runScript(String path) throws IOException, SQLException {
@@ -34,7 +35,7 @@ public class SqlReplicasFinderTest {
     p.setProperty("user", mysql.getUsername());
     p.setProperty("password", mysql.getPassword());
     final InputStream resourceAsStream =
-        SqlReplicasFinderTest.class.getClassLoader().getResourceAsStream(path);
+        MySqlReplicasFinderTest.class.getClassLoader().getResourceAsStream(path);
     final String schemaSql =
         CharStreams.toString(new InputStreamReader(resourceAsStream, Charsets.UTF_8));
     Connection conn = DriverManager.getConnection(mysql.getJdbcUrl(), p);
@@ -73,7 +74,7 @@ public class SqlReplicasFinderTest {
 
   @Test
   public void withReplicas() throws URISyntaxException, IOException, SQLException {
-    this.runScript("technology/dice/dicefairlink/discovery/members/sql/2replicas.sql");
+    this.runScript("technology/dice/dicefairlink/discovery/members/sql/mysql/2replicas.sql");
     MySQLReplicasFinder underTest =
         new MySQLReplicasFinder(
             new FairlinkConnectionString(
@@ -88,7 +89,7 @@ public class SqlReplicasFinderTest {
   @Test
   public void noConnectionsResultsInEmptySet()
       throws URISyntaxException, IOException, SQLException {
-    this.runScript("technology/dice/dicefairlink/discovery/members/sql/2replicas.sql");
+    this.runScript("technology/dice/dicefairlink/discovery/members/sql/mysql/2replicas.sql");
     MySQLReplicasFinder underTest =
         new MySQLReplicasFinder(
             new FairlinkConnectionString(
@@ -105,7 +106,7 @@ public class SqlReplicasFinderTest {
 
   @Test
   public void noTableResultsInEmptySet() throws URISyntaxException, IOException, SQLException {
-    this.runScript("technology/dice/dicefairlink/discovery/members/sql/2replicas.sql");
+    this.runScript("technology/dice/dicefairlink/discovery/members/sql/mysql/2replicas.sql");
     MySQLReplicasFinder underTest =
         new MySQLReplicasFinder(
             new FairlinkConnectionString(

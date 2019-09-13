@@ -33,6 +33,7 @@ import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
 import technology.dice.dicefairlink.discovery.members.ReplicaValidator;
 import technology.dice.dicefairlink.discovery.members.awsapi.AwsApiReplicasFinder;
 import technology.dice.dicefairlink.discovery.members.sql.MySQLReplicasFinder;
+import technology.dice.dicefairlink.discovery.members.sql.PostgresSQLReplicasFinder;
 import technology.dice.dicefairlink.discovery.tags.TagFilter;
 import technology.dice.dicefairlink.discovery.tags.awsapi.ResourceGroupApiTagDiscovery;
 import technology.dice.dicefairlink.iterators.RandomisedCyclicIterator;
@@ -251,6 +252,10 @@ public class AuroraReadReplicasDriver implements Driver {
             fairlinkConnectionString,
             driver,
             properties.getProperty("_fairlinkMySQLSchemaOverride"));
+      case SQL_POSTGRES:
+        return new PostgresSQLReplicasFinder(
+            fairlinkConnectionString,
+            driver);
       default:
         throw new IllegalArgumentException(
             fairlinkConfiguration.getReplicasDiscoveryMode().name()
