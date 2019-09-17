@@ -109,6 +109,7 @@ public class FairlinkMemberFinder implements MemberFinder {
               + "done). Excluded "
               + this.excludedInstanceIds.size()
               + " instance"
+              + (excludedInstanceIds.size() != 1 ? "s" : "")
               + (this.excludedInstanceIds.size() != 1 ? "" : "s")
               + ". Next update in "
               + this.fairlinkConfiguration.getReplicaPollInterval());
