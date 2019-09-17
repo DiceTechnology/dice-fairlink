@@ -45,14 +45,6 @@ public final class ClusterInfo {
   }
 
   @Override
-  public String toString() {
-    return "ClusterInfo{" +
-        "readonlyEndpoint='" + readonlyEndpoint + '\'' +
-        ", replicas=" + replicas +
-        '}';
-  }
-
-  @Override
   public int hashCode() {
     return Objects.hash(getReadonlyEndpoint(), getReplicas());
   }
