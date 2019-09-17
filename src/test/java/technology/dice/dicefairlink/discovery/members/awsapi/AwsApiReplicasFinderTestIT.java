@@ -20,13 +20,13 @@ public class AwsApiReplicasFinderTestIT {
 
     client.describeDBClusters(
         DescribeDbClustersRequest.builder()
-            .dbClusterIdentifier("prod-consumer-payment-agd")
+            .dbClusterIdentifier("cluster")
             .build());
 
     client.describeDBInstances(
         DescribeDbInstancesRequest.builder()
             .filters(
-                Filter.builder().name("db-cluster-id").values("prod-consumer-payment-agd").build())
+                Filter.builder().name("db-cluster-id").values("cluster").build())
             .build());
   }
 }
