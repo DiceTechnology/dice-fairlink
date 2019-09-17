@@ -86,7 +86,7 @@ public class AwsApiReplicasFinder implements MemberFinderMethod {
                   pageOfInstances ->
                       pageOfInstances.dbInstances().stream()
                           .filter(AwsApiReplicasFinder::isActive)
-                          .filter(dbInstance -> isDbWriter(writer, dbInstance))
+                          .filter(dbInstance -> isDbReader(writer, dbInstance))
                           .map(dbInstance -> dbInstance.dbInstanceIdentifier()))
               .collect(Collectors.toSet());
 
@@ -99,7 +99,7 @@ public class AwsApiReplicasFinder implements MemberFinderMethod {
     }
   }
 
-  private static boolean isDbWriter(Optional<DBClusterMember> writer, DBInstance dbInstance) {
+  private static boolean isDbReader(Optional<DBClusterMember> writer, DBInstance dbInstance) {
     return !writer
         .map(w -> w.dbInstanceIdentifier().equalsIgnoreCase(dbInstance.dbInstanceIdentifier()))
         .orElse(false);
