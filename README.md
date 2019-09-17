@@ -96,7 +96,7 @@ dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/
    {
       "Effect":"Allow",
       "Action":[
-         "rds:DescribeDBClusters",
+         "rds:DescribeDBClusters"
       ],
       "Resource":[
          "arn:aws:rds:*:<account_id>:cluster:<cluster_name_regex>"
