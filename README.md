@@ -21,7 +21,7 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 Version 2.x.x of dice-fairlink is substantially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
 
 Changes from 1.x.x:
-- Renamed the sub-protocol from `auroraro` to `fairlink` (`aurora` is still accepted for backward compatibility and will be removed in version 3.0.0)
+- Renamed the sub-protocol from `auroraro` to `fairlink` (`auroraro` is still accepted for backward compatibility and will be removed in version 3.0.0)
 - Added SQL discovery (only for MySQL. Other underlaying drivers can still use the AWS API)
 - Added a randomised poller start delay to avoid swarming the AWS API if many applications using dice fairlink are started at the same time
 - Refactored to make it more testable
