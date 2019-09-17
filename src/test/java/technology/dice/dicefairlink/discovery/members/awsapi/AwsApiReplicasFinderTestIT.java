@@ -5,11 +5,13 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.rds.RdsClient;
 import software.amazon.awssdk.services.rds.model.DescribeDbClustersRequest;
+import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
+import software.amazon.awssdk.services.rds.model.Filter;
 
 public class AwsApiReplicasFinderTestIT {
   // Here to capture the http wire traffic. Not automatically ran as part of CI
   @Test
-  public void makeDescribeClusterApiCall() {
+  public void makeDescribeApiCalls() {
     final RdsClient client =
         RdsClient.builder()
             .region(Region.EU_WEST_1)
@@ -17,6 +19,14 @@ public class AwsApiReplicasFinderTestIT {
             .build();
 
     client.describeDBClusters(
-        DescribeDbClustersRequest.builder().dbClusterIdentifier("sample-cluster").build());
+        DescribeDbClustersRequest.builder()
+            .dbClusterIdentifier("cluster")
+            .build());
+
+    client.describeDBInstances(
+        DescribeDbInstancesRequest.builder()
+            .filters(
+                Filter.builder().name("db-cluster-id").values("cluster").build())
+            .build());
   }
 }
