@@ -6,6 +6,8 @@
 package technology.dice.dicefairlink.discovery.members.awsapi;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -15,8 +17,12 @@ import software.amazon.awssdk.services.rds.RdsClient;
 import software.amazon.awssdk.services.rds.RdsClientBuilder;
 import software.amazon.awssdk.services.rds.model.DBCluster;
 import software.amazon.awssdk.services.rds.model.DBClusterMember;
+import software.amazon.awssdk.services.rds.model.DBInstance;
 import software.amazon.awssdk.services.rds.model.DescribeDbClustersRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbClustersResponse;
+import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
+import software.amazon.awssdk.services.rds.model.Filter;
+import software.amazon.awssdk.services.rds.paginators.DescribeDBInstancesIterable;
 import technology.dice.dicefairlink.config.FairlinkConfiguration;
 import technology.dice.dicefairlink.discovery.members.ClusterInfo;
 import technology.dice.dicefairlink.discovery.members.MemberFinderMethod;
@@ -24,6 +30,9 @@ import technology.dice.dicefairlink.driver.FairlinkConnectionString;
 
 public class AwsApiReplicasFinder implements MemberFinderMethod {
   private static final Logger LOGGER = Logger.getLogger(AwsApiReplicasFinder.class.getName());
+  private static final String ACTIVE_STATUS = "available";
+  public static final String DB_CLUSTER_ID_FILTER = "db-cluster-id";
+  private static final Set<String> EMPTY_SET = Collections.unmodifiableSet(new HashSet<>(0));
   private final String clusterId;
   private final RdsClient client;
 
@@ -58,21 +67,46 @@ public class AwsApiReplicasFinder implements MemberFinderMethod {
   }
 
   private Set<String> replicaMembersOf(DBCluster cluster) {
-    final Optional<DBClusterMember> writer =
-        cluster.dbClusterMembers().stream().filter(member -> member.isClusterWriter()).findAny();
-    final Set<String> replicaIds =
-        cluster.dbClusterMembers().stream()
-            .filter(dbClusterMember -> isDbWriter(writer, dbClusterMember))
-            .map(dbClusterMember -> dbClusterMember.dbInstanceIdentifier())
-            .collect(Collectors.toSet());
+    try {
+      DescribeDbInstancesRequest request =
+          DescribeDbInstancesRequest.builder()
+              .filters(
+                  Filter.builder()
+                      .name(DB_CLUSTER_ID_FILTER)
+                      .values(cluster.dbClusterIdentifier())
+                      .build())
+              .build();
+      final Optional<DBClusterMember> writer =
+          cluster.dbClusterMembers().stream().filter(member -> member.isClusterWriter()).findAny();
+      final DescribeDBInstancesIterable describeInstancesPaginator =
+          client.describeDBInstancesPaginator(request);
+      final Set<String> replicaIds =
+          describeInstancesPaginator.stream()
+              .flatMap(
+                  pageOfInstances ->
+                      pageOfInstances.dbInstances().stream()
+                          .filter(AwsApiReplicasFinder::isActive)
+                          .filter(dbInstance -> isDbReader(writer, dbInstance))
+                          .map(dbInstance -> dbInstance.dbInstanceIdentifier()))
+              .collect(Collectors.toSet());
 
-    return replicaIds;
+      return replicaIds;
+
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.SEVERE, "Failed to list cluster replicas. Returning an empty set of replicas", e);
+      return EMPTY_SET;
+    }
   }
 
-  private static boolean isDbWriter(Optional<DBClusterMember> writer, DBClusterMember dbInstance) {
+  private static boolean isDbReader(Optional<DBClusterMember> writer, DBInstance dbInstance) {
     return !writer
         .map(w -> w.dbInstanceIdentifier().equalsIgnoreCase(dbInstance.dbInstanceIdentifier()))
         .orElse(false);
+  }
+
+  private static boolean isActive(DBInstance dbInstance) {
+    return dbInstance.dbInstanceStatus().equalsIgnoreCase(ACTIVE_STATUS);
   }
 
   @Override

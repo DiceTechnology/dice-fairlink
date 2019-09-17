@@ -87,7 +87,7 @@ Dynamic changes to the cluster (node promotions, removals and additions) are aut
 # Member discovery
 dice-fairlink offers two options to discover the members of an Aurora cluster. It polls for any changes and update its internal state with the configured frequency (see Driver Properties section). The driver does this once when the driver is loaded, and enters the periodic poll cycle This after a random delay of up to 10 seconds. This is to avoid, in scenarios of large clusters of applications using dice-fairlink, exceeding the rate limits imposed by AWS. 
 
-Versions 1.x.x of dice-fairlink are very prone to this problem, as they make 1+2*number_of_replicas (`O(n)`) calls on each cycle. Versions 2.x.x make 1 (`O(1)`) call per cycle when using `AWS API` discovery mode, and 0 calls per cycle when using `MySQL` mode. See the Exclusions section to learn about an additional call on both discovery modes.
+Versions 1.x.x of dice-fairlink are very prone to this problem, as they make 1+2*number_of_replicas (`O(n)`) calls on each cycle. Versions 2.x.x make 2 (`O(1)`) calls per cycle when using `AWS API` discovery mode, and 0 calls per cycle when using `MySQL` mode. See the Exclusions section to learn about an additional call on both discovery modes.
 
 ## AWS API Mode
 dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/Welcome.html) to discover the members of a cluster, and to determine which cluster member is the writer. To use this discovery mode, the code must be executed by an IAM user with the following policy:
@@ -101,15 +101,25 @@ dice-fairlink uses the [`RDS` API](https://docs.aws.amazon.com/AmazonRDS/latest/
       "Resource":[
          "arn:aws:rds:*:<account_id>:cluster:<cluster_name_regex>"
       ]
-   }
+   },
+    {
+      "Effect":"Allow",
+      "Action":[
+         "rds:DescribeDBInstances",
+         "rds:ListTagsForResource"
+      ],
+      "Resource":"*"
+    }
 ]
 ``` 
 
-Note that the regexes above can be merely `*` depending on how strict you want your permissions to be.
+Note that the regex above can be merely `*` depending on how strict you want your permissions to be.
 
 
 When using the `AWS API` discovery mode, the `host` part of the connection string must be the **cluster identifier**. For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc`. The cluster's read-only endpoint will be used as 
-fallback should an error occur in refreshing the list of cluster members, unless the device property `fallbackEndpoint` is set (not recommended).
+fallback should an error occur in refreshing the list of cluster members, unless the device property `fallbackEndpoint` is set (not recommended to be set to a specific replica).
+On this discovery mode, dice-fairlink will additionally check if all the replicas are in the `AVAILABLE` state. This is because, during a DB Instance deletion, RDS will remove the tags *before* removing
+it from the list of cluster members. This can cause a period where the exclusion tag is no longer present, but the server is deleted shortly after, causing connections to be dropped, causing application errors.
 
 If your cluster uses the `MySQL` engine, it is recommended to use the `MySQL` discovery mode, as it is gentler on the AWS API.
 
@@ -134,7 +144,7 @@ It is possible to prevent members of an Aurora cluster to receive connections de
 To exclude a member, tag it with key=`Fairlink-Exclude` and value=`true`. dice-fairlink
 will treat them as not available and skip them when assigning connections. Tag changes will be picked up within the time specified in `tagsPollInterval` (see Driver Properties section). Please note that versions 1.x.x would poll for this information with a frequency determined by `replicaPollInterval` instead.
 
-dice-fairlink uses the [`Resource Group` API](https://docs.aws.amazon.com/ARG/latest/APIReference/Welcome.html) to obtain the list of all excluded members. Unfortunately this API does not offer a way to obtain only the information pertaining to a specific cluster, and as a consequence dice-fairlink will hold information about **all** RDS instances tagged with `Fairlink-Exclude=true` in the entire region of the AWS accounbt in question. It is also not possible to restrict this via an IAM policy. It is assumed the size of this collection will not be problematic, and that making a single call (instead of 1 call per database instance) outweights this waste. 
+dice-fairlink uses the [`Resource Group` API](https://docs.aws.amazon.com/ARG/latest/APIReference/Welcome.html) to obtain the list of all excluded members. Unfortunately this API does not offer a way to obtain only the information pertaining to a specific cluster, and as a consequence dice-fairlink will hold information about **all** RDS instances tagged with `Fairlink-Exclude=true` in the entire region of the AWS account in question. It is also not possible to restrict this via an IAM policy. It is assumed the size of this collection will not be problematic, and that making a single call (instead of 1 call per database instance) outweighs this waste. 
 
 For the discovery of exclusions (not possible to switch off in the current version) to work correctly, the code must be executed by an IAM user with the following policy:
 

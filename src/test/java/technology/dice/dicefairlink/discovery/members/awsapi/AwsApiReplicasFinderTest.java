@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
@@ -40,7 +41,7 @@ public class AwsApiReplicasFinderTest {
   }
 
   @Test
-  public void withMembers() throws URISyntaxException, IOException {
+  public void withMembersAllAvailable() throws URISyntaxException, IOException {
     AwsApiReplicasFinder underTest =
         new AwsApiReplicasFinder(
             new FairlinkConfiguration(this.baseTestProperties(), ImmutableMap.of()),
@@ -48,7 +49,7 @@ public class AwsApiReplicasFinderTest {
                 "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc",
                 this.baseTestProperties()));
 
-    String response =
+    String describeClusterResponse =
         CharStreams.toString(
             new InputStreamReader(
                 AwsApiReplicasFinderTest.class
@@ -57,7 +58,23 @@ public class AwsApiReplicasFinderTest {
                         "technology/dice/dicefairlink/discovery/members/awsapi/withMembers.xml"),
                 Charsets.UTF_8));
 
-    stubFor(post(urlEqualTo("/")).willReturn(aResponse().withStatus(200).withBody(response)));
+    String describeInstancesResponse =
+        CharStreams.toString(
+            new InputStreamReader(
+                AwsApiReplicasFinderTest.class
+                    .getClassLoader()
+                    .getResourceAsStream(
+                        "technology/dice/dicefairlink/discovery/members/awsapi/allAvailableDbInstances.xml"),
+                Charsets.UTF_8));
+
+    stubFor(
+        post(urlEqualTo("/"))
+            .withRequestBody(WireMock.containing("Action=DescribeDBClusters"))
+            .willReturn(aResponse().withStatus(200).withBody(describeClusterResponse)));
+    stubFor(
+        post(urlEqualTo("/"))
+            .withRequestBody(WireMock.containing("Action=DescribeDBInstances"))
+            .willReturn(aResponse().withStatus(200).withBody(describeInstancesResponse)));
 
     final ClusterInfo actual = underTest.discoverCluster();
     Assert.assertEquals(
@@ -65,6 +82,47 @@ public class AwsApiReplicasFinderTest {
             "cluster-reader-endpoint",
             ImmutableSet.of("my-db-cluster-agd-3", "my-db-cluster-agd-2")),
         actual);
+  }
+
+  @Test
+  public void withMembersOnReaderDeleting() throws URISyntaxException, IOException {
+    AwsApiReplicasFinder underTest =
+        new AwsApiReplicasFinder(
+            new FairlinkConfiguration(this.baseTestProperties(), ImmutableMap.of()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc",
+                this.baseTestProperties()));
+
+    String describeClusterResponse =
+        CharStreams.toString(
+            new InputStreamReader(
+                AwsApiReplicasFinderTest.class
+                    .getClassLoader()
+                    .getResourceAsStream(
+                        "technology/dice/dicefairlink/discovery/members/awsapi/withMembers.xml"),
+                Charsets.UTF_8));
+
+    String describeInstancesResponse =
+        CharStreams.toString(
+            new InputStreamReader(
+                AwsApiReplicasFinderTest.class
+                    .getClassLoader()
+                    .getResourceAsStream(
+                        "technology/dice/dicefairlink/discovery/members/awsapi/oneReplicaDeletingInstances.xml"),
+                Charsets.UTF_8));
+
+    stubFor(
+        post(urlEqualTo("/"))
+            .withRequestBody(WireMock.containing("Action=DescribeDBClusters"))
+            .willReturn(aResponse().withStatus(200).withBody(describeClusterResponse)));
+    stubFor(
+        post(urlEqualTo("/"))
+            .withRequestBody(WireMock.containing("Action=DescribeDBInstances"))
+            .willReturn(aResponse().withStatus(200).withBody(describeInstancesResponse)));
+
+    final ClusterInfo actual = underTest.discoverCluster();
+    Assert.assertEquals(
+        new ClusterInfo("cluster-reader-endpoint", ImmutableSet.of("my-db-cluster-agd-2")), actual);
   }
 
   @Test
@@ -93,7 +151,7 @@ public class AwsApiReplicasFinderTest {
   }
 
   @Test(expected = RuntimeException.class)
-  public void serverError() throws URISyntaxException {
+  public void serverErrorDescribingCluster() throws URISyntaxException {
     AwsApiReplicasFinder underTest =
         new AwsApiReplicasFinder(
             new FairlinkConfiguration(this.baseTestProperties(), ImmutableMap.of()),
@@ -104,6 +162,38 @@ public class AwsApiReplicasFinderTest {
     stubFor(post(urlEqualTo("/")).willReturn(aResponse().withStatus(500)));
 
     underTest.discoverCluster();
+  }
+
+  @Test
+  public void serverErrorDescribingInstances() throws URISyntaxException, IOException {
+    AwsApiReplicasFinder underTest =
+        new AwsApiReplicasFinder(
+            new FairlinkConfiguration(this.baseTestProperties(), ImmutableMap.of()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://aa:123/db?param1=123&param2=true&param3=abc",
+                this.baseTestProperties()));
+
+    String describeClusterResponse =
+        CharStreams.toString(
+            new InputStreamReader(
+                AwsApiReplicasFinderTest.class
+                    .getClassLoader()
+                    .getResourceAsStream(
+                        "technology/dice/dicefairlink/discovery/members/awsapi/withMembers.xml"),
+                Charsets.UTF_8));
+
+    stubFor(
+        post(urlEqualTo("/"))
+            .withRequestBody(WireMock.containing("Action=DescribeDBClusters"))
+            .willReturn(aResponse().withStatus(200).withBody(describeClusterResponse)));
+
+    stubFor(
+        post(urlEqualTo("/"))
+            .withRequestBody(WireMock.containing("Action=DescribeDBInstances"))
+            .willReturn(aResponse().withStatus(500)));
+
+    final ClusterInfo actual = underTest.discoverCluster();
+    Assert.assertEquals(new ClusterInfo("cluster-reader-endpoint", ImmutableSet.of()), actual);
   }
 
   @Test(expected = RuntimeException.class)
