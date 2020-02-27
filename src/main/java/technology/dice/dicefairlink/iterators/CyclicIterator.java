@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 
 public class CyclicIterator<T> implements SizedIterator<T> {
   private final List<T> elements;
-  private Iterator<T> iterator;
+  private volatile Iterator<T> iterator;
 
   protected CyclicIterator(Collection<? extends T> collection) {
     this.elements = Collections.unmodifiableList(new ArrayList(collection));
