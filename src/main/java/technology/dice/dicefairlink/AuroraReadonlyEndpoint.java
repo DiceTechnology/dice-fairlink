@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class AuroraReadonlyEndpoint {
   private static final Logger LOGGER = Logger.getLogger(AuroraReadonlyEndpoint.class.getName());
   private final MemberFinder fairlinkMemberFinder;
-  private SizedIterator<String> replicas;
+  private volatile SizedIterator<String> replicas;
   private final AtomicReference<String> lastReplica = new AtomicReference<>();
 
   public AuroraReadonlyEndpoint(

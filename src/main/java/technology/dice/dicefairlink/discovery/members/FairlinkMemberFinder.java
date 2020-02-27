@@ -34,11 +34,11 @@ public class FairlinkMemberFinder implements MemberFinder {
   private final MemberFinderMethod memberFinder;
   private final ReplicaValidator replicaValidator;
   private final Function<Collection<String>, SizedIterator<String>> iteratorBuilder;
+  private volatile Optional<String> fallbackEndpoint = Optional.empty();
+  private volatile Collection<String> excludedInstanceIds =
+      Collections.unmodifiableCollection(new HashSet<>(0));
   protected final FairlinkConnectionString fairlinkConnectionString;
   protected final TagFilter tagFilter;
-  protected Optional<String> fallbackEndpoint = Optional.empty();
-  protected Collection<String> excludedInstanceIds =
-      Collections.unmodifiableCollection(new HashSet<>(0));
 
   public FairlinkMemberFinder(
       FairlinkConfiguration fairlinkConfiguration,
