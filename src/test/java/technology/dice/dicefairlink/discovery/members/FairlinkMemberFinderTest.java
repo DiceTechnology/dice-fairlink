@@ -486,4 +486,30 @@ public class FairlinkMemberFinderTest {
             this.baseTestProperties()),
         ((TestCyclicIterator) secondResult).getElements());
   }
+
+  @Test
+  public void explicitFallbackOnDiscoverClusterFailure() throws URISyntaxException {
+    final Properties properties = this.baseTestProperties();
+    properties.setProperty("fallbackEndpoint", "overridden-fallback.domain.com");
+    FairlinkMemberFinder underTest =
+        new FairlinkMemberFinder(
+            new FairlinkConfiguration(properties, new HashMap<>()),
+            new FairlinkConnectionString(
+                "jdbc:fairlink:fairlinktestdriver://my-fallback.domain.com", properties),
+            this.exclusionTagsExecutor,
+            new FixedSetExcludedReplicasFinder(ImmutableList.of()),
+            () -> {
+              throw new RuntimeException("Cluster discovery always fails in this test");
+            },
+            TestCyclicIterator::of,
+            (host, p) -> true);
+    this.exclusionTagsExecutor.step();
+    final SizedIterator<String> result = underTest.discoverReplicas();
+
+    Assert.assertTrue(result instanceof TestCyclicIterator);
+    Assert.assertEquals(1, result.size());
+    Assert.assertEquals(
+        ImmutableSet.of("overridden-fallback.domain.com"),
+        ((TestCyclicIterator) result).getElements());
+  }
 }
