@@ -20,6 +20,9 @@ Because in many cases Aurora will not evenly distribute the connections amongst 
 # Here for version 1.x.x ?
 Version 2.x.x of dice-fairlink is substantially different internally, in particular in terms of configuration and the IAM permissions it needs to run. Please see the README.md of versions 1.x.x [here](https://github.com/DiceTechnology/dice-fairlink/blob/1.2.4/README.md).
 
+Changes from 2.x.x:
+- Added SQL discovery for postgres
+
 Changes from 1.x.x:
 - Renamed the sub-protocol from `auroraro` to `fairlink` (`auroraro` is still accepted for backward compatibility and will be removed in version 3.0.0)
 - Added SQL discovery (only for MySQL. Other underlaying drivers can still use the AWS API)
@@ -83,6 +86,30 @@ In this example dice-fairlink will use the available mysql driver to establish t
 
 Dynamic changes to the cluster (node promotions, removals and additions) are automatically detected.
 
+## Example with Postgres discovery:
+
+In a cluster named `my-cluster` with three read replicas `my-cluster-r1`, `my-cluster-r2` and, `my-cluster-r3`, and
+the following connection string
+```java
+String connectionString = "jdbc:fairlink:postgresql://my-cluster.cluster-xxxxx.a-region.amazonaws.com/my-schema";
+```
+dice-fairlink will return `my-cluster-r1` for the first connection request, `my-cluster-r2` to the second
+and, `my-cluster-r3` to the third. The forth request for a connection will again return `my-cluster-r1`, and so forth.
+
+A connection test is performed before the replica is returned to the application. This is controlled by the `validateConnection` property (see Driver Properties section).
+
+### Driver properties:
+```
+discoveryMode=SQL_POSTGRES
+replicaEndpointTemplate=%s.-xxxxx.a-region.amazonaws.com
+fallbackEndpoint=my-cluster.cluster-ro--xxxxx.region.amazonaws.com
+auroraClusterRegion=a-region
+```
+
+In this example dice-fairlink will use the available mysql driver to establish the connection to the read replica.
+
+Dynamic changes to the cluster (node promotions, removals and additions) are automatically detected.
+
 
 # Member discovery
 dice-fairlink offers two options to discover the members of an Aurora cluster. It polls for any changes and update its internal state with the configured frequency (see Driver Properties section). The driver does this once when the driver is loaded, and enters the periodic poll cycle This after a random delay of up to 10 seconds. This is to avoid, in scenarios of large clusters of applications using dice-fairlink, exceeding the rate limits imposed by AWS. 
@@ -123,10 +150,19 @@ it from the list of cluster members. This can cause a period where the exclusion
 
 If your cluster uses the `MySQL` engine, it is recommended to use the `MySQL` discovery mode, as it is gentler on the AWS API.
 
+
+## SQL-based discovery modes
+dice-fairlink can connect to the aurora database and use specific queries AWS provides to obtain the list of cluster members. 
+
+A SQL-based discovery mode does not require any special IAM user permissions. 
+
+When using the a sql discovery mode, the `host` part of the connection string must be a **cluster endpoint**. 
+We recommend using the cluster (writer) endpoint as the hostname of all fairlink's connection strings.
+
+To avoid burdening the writer node with read-only statements in the event of a failure, set the `fallbackEndpoint` driver property (see Driver Properties section). 
+
 ## MySQL Mode
 dice-fairlink uses the `information_schema.replica_host_status` table available on Aurora MySQL clusters to list the members of a given cluster. The credentials on the connection string, or on the driver properties will be used.
-
-This discovery mode does not require any special IAM user permissions. 
 
 When using the `MySQL` discovery mode, the `host` part of the connection string must be a **cluster endpoint**. Even though [AWS's documentation](https://d1.awsstatic.com/whitepapers/RDS/amazon-aurora-connection-management-handbook.pdf) states either the writer or reader endpoint will work - in fact that *any instance* would work - 
 we have observed situations where querying any instance other than the writer will return a **partial list of cluster members**, which will limit the effectiveness of dice-fairlink. 
@@ -134,6 +170,9 @@ For this reason, we recommend using the cluster (writer) endpoint as the hostnam
 set the `fallbackEndpoint` driver property (see Driver Properties section). 
 
 For example, for a cluster with the cluster endpoint `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`, it must be set to `abc.cluster-xxxxxx.eu-west-1.rds.amazonaws.com`. This host will be used as a fallback in the case clusters without any replicas or if an error occurs, unless the variable `fallbackEndpoint` is set to the cluster's read endpoint (recommended).
+
+## Postgres Mode
+dice-fairlink uses the `aurora_replication_status()` function available on Aurora Postgres clusters to list the members of a given cluster. The credentials on the connection string, or on the driver properties will be used.
 
 ## Connection validation
 dice-fairlink validates every replica before making it available to the application. This is done once on every discovery cycle. On versions 1.x.x dice-fairlink would rely on the `RDS`API returning instances in the `available` status. On versions 2.x.x dice-fairlink executes `SELECT 1` on each discovered replica, using the underlaying protocol, as specified on the connection string. This validation occurs regardless of the discovery mode, and be disabled via the `validateConnection` property (see Driver Properties section)

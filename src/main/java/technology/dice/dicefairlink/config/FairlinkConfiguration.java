@@ -36,6 +36,7 @@ public class FairlinkConfiguration {
   private static final Duration DEFAULT_POLLER_INTERVAL = Duration.ofSeconds(30);
   private static final Duration DEFAULT_TAG_POLL_INTERVAL = Duration.ofMinutes(2);
   private static final String MYSQL = "mysql";
+  private static final String POSTGRESQL = "postgresql";
   private static final String AWS_ENDPOINT_OVERRIDE = "awsEndpointOverride";
   private final Region auroraClusterRegion;
   private final Optional<String> replicaEndpointTemplate;
@@ -215,7 +216,7 @@ public class FairlinkConfiguration {
   }
 
   public boolean isDiscoveryModeValidForDelegate(String delegateProtocol) {
-    return this.getReplicasDiscoveryMode() != ReplicasDiscoveryMode.SQL_MYSQL
-        || delegateProtocol.equalsIgnoreCase(MYSQL);
+    return (this.getReplicasDiscoveryMode() != ReplicasDiscoveryMode.SQL_MYSQL || delegateProtocol.equalsIgnoreCase(MYSQL))
+            && (this.getReplicasDiscoveryMode() != ReplicasDiscoveryMode.SQL_POSTGRES || delegateProtocol.equalsIgnoreCase(POSTGRESQL));
   }
 }

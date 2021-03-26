@@ -10,7 +10,8 @@ import java.util.Optional;
 
 public enum ReplicasDiscoveryMode {
   AWS_API,
-  SQL_MYSQL;
+  SQL_MYSQL,
+  SQL_POSTGRES;
 
   public static Optional<ReplicasDiscoveryMode> fromStringInsensitive(String candidate) {
     return Arrays.stream(ReplicasDiscoveryMode.values())
