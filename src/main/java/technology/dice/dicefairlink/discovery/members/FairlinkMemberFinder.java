@@ -34,11 +34,11 @@ public class FairlinkMemberFinder implements MemberFinder {
   private final MemberFinderMethod memberFinder;
   private final ReplicaValidator replicaValidator;
   private final Function<Collection<String>, SizedIterator<String>> iteratorBuilder;
+  private volatile Optional<String> fallbackEndpoint = Optional.empty();
+  private volatile Collection<String> excludedInstanceIds =
+      Collections.unmodifiableCollection(new HashSet<>(0));
   protected final FairlinkConnectionString fairlinkConnectionString;
   protected final TagFilter tagFilter;
-  protected Optional<String> fallbackEndpoint = Optional.empty();
-  protected Collection<String> excludedInstanceIds =
-      Collections.unmodifiableCollection(new HashSet<>(0));
 
   public FairlinkMemberFinder(
       FairlinkConfiguration fairlinkConfiguration,
@@ -53,8 +53,9 @@ public class FairlinkMemberFinder implements MemberFinder {
     this.tagFilter = excludedInstancesFinder;
     this.memberFinder = memberFinder;
     this.replicaValidator = replicaValidator;
-    final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
     this.iteratorBuilder = stringSizedIteratorBuilder;
+    this.fallbackEndpoint = fairlinkConfiguration.getFallbackEndpoint();
+    final Duration startJitter = fairlinkConfiguration.randomBoundDelay();
     LOGGER.info("Starting excluded members discovery with " + startJitter + " delay.");
     tagsPollingExecutor.scheduleAtFixedRate(
         () -> excludedInstanceIds = safeExclusionsDiscovery(),
@@ -89,7 +90,7 @@ public class FairlinkMemberFinder implements MemberFinder {
                   dbIdentifier ->
                       (!this.fairlinkConfiguration.isValidateConnection())
                           || this.validate(fairlinkConfiguration.hostname(dbIdentifier)))
-              .map(dbIdentifier -> fairlinkConfiguration.hostname(dbIdentifier))
+              .map(fairlinkConfiguration::hostname)
               .collect(Collectors.toSet());
       final SizedIterator<String> result =
           filteredReplicas.isEmpty()
@@ -119,8 +120,8 @@ public class FairlinkMemberFinder implements MemberFinder {
           Level.WARNING,
           "Error discovering cluster identified by ["
               + this.fairlinkConnectionString.getFairlinkUri()
-              + "]. Will return fallback endpoint"
-              + this.fallbackEndpoint
+              + "]. Will return fallback endpoint "
+              + this.fallbackEndpoint.orElse("N/A")
               + " if available",
           e);
       if (!this.fallbackEndpoint.isPresent()) {
@@ -131,15 +132,10 @@ public class FairlinkMemberFinder implements MemberFinder {
       return fallbackEndpoint
           .map(fallbackEndpoint -> this.iteratorBuilder.apply(this.setOf(fallbackEndpoint)))
           .orElseThrow(
-              () -> {
-                LOGGER.log(
-                    Level.SEVERE,
-                    "Fallback endpoint not available. This means the cluster has never been successfully discovered. This is probably a permanent error condition");
-                return new RuntimeException(
-                    "Could not discover cluster identified by ["
-                        + fairlinkConnectionString.getFairlinkUri()
-                        + "] and a fallback reader endpoint is not available");
-              });
+              () -> new RuntimeException(
+                  "Could not discover cluster identified by ["
+                      + fairlinkConnectionString.getFairlinkUri()
+                      + "] and a fallback reader endpoint is not available"));
     }
   }
 
