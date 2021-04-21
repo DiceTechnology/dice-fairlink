@@ -19,6 +19,9 @@ ARTIFACT_ID_POM=$( mvn help:evaluate -Dexpression=project.artifactId | grep -v '
 git config --global user.email "build@travis-ci.com"
 git config --global user.name "Travis CI"
 GITHUB_REPO_URL_TOKEN="https://${TRAVIS_DICEOSS_GITHUB_TOKEN}:x-oauth-basic@github.com/${TRAVIS_REPO_SLUG}.git"
-git remote set-url origin "${GITHUB_REPO_URL_TOKEN}"
 
-mvn scm:tag && slack "Tagged $ARTIFACT_ID_POM with version $VERSION_POM"
+git remote set-url origin "${GITHUB_REPO_URL_TOKEN}" && \
+git tag "${VERSION_POM}" -m "[Travis] Released ${VERSION_POM}" 2>/dev/null && \
+git push origin --tags 2>/dev/null && \
+echo "Tagged $ARTIFACT_ID_POM with version $VERSION_POM" && \
+slack "Tagged $ARTIFACT_ID_POM with version $VERSION_POM"
