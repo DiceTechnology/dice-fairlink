@@ -5,8 +5,8 @@
 
 function slack {
   local PAYLOAD="payload={\"channel\": \"dice-opensource\", \"text\":\" $1 \", \"username\": \"Travis\", \"icon_url\": \"https://fst.slack-edge.com/66f9/img/services/travis_36.png\"}"
-  echo Sending message to $encrypted_SLACK_URL/$encrypted_SLACK_ROOM_API_KEY
-  curl -o /dev/null -s -w "%{http_code}\n" -X POST --data-urlencode "$PAYLOAD" $encrypted_SLACK_URL/$encrypted_SLACK_ROOM_API_KEY
+  echo Sending message to slack
+  curl -o /dev/null -s -w "%{http_code}\n" -X POST --data-urlencode "$PAYLOAD" $encrypted_SLACK_URL
 }
 
 # Get VERSION from top level POM
@@ -18,5 +18,7 @@ ARTIFACT_ID_POM=$( mvn help:evaluate -Dexpression=project.artifactId | grep -v '
 # Setup Git Configuration
 git config --global user.email "build@travis-ci.com"
 git config --global user.name "Travis CI"
+GITHUB_REPO_URL_TOKEN="https://${TRAVIS_DICEOSS_GITHUB_TOKEN}:x-oauth-basic@github.com/${TRAVIS_REPO_SLUG}.git"
+git remote set-url origin "${GITHUB_REPO_URL_TOKEN}"
 
 mvn scm:tag && slack "Tagged $ARTIFACT_ID_POM with version $VERSION_POM"
