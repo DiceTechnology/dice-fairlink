@@ -29,7 +29,6 @@ before_install:
   - eval "$(ssh-agent)"
   - ssh-add ~/github.pem
   - git config core.sshCommand "ssh -i ~/github.pem -F /dev/null"
-  - ssh git@github.com
 
 env:
   global:
