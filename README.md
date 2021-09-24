@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/DiceTechnology/dice-fairlink.svg?token=F6ktiNWbNbvGRbN5NmqA&branch=master)](https://travis-ci.com/DiceTechnology/dice-fairlink)[ ![Download](https://api.bintray.com/packages/dicetechnology/dice-fairlink/dice-fairlink/images/download.svg) ](https://bintray.com/dicetechnology/dice-fairlink/dice-fairlink/_latestVersion)[![codecov](https://codecov.io/gh/DiceTechnology/dice-fairlink/branch/master/graph/badge.svg)](https://codecov.io/gh/DiceTechnology/dice-fairlink)
+[![Build Status](https://travis-ci.com/DiceTechnology/dice-fairlink.svg?token=F6ktiNWbNbvGRbN5NmqA&branch=master)](https://travis-ci.com/DiceTechnology/dice-fairlink)[ ![Download](https://maven-badges.herokuapp.com/maven-central/technology.dice.open/dice-fairlink/badge.svg) ](https://maven-badges.herokuapp.com/maven-central/technology.dice.open/dice-fairlink)[![codecov](https://codecov.io/gh/DiceTechnology/dice-fairlink/branch/master/graph/badge.svg)](https://codecov.io/gh/DiceTechnology/dice-fairlink)
 
 dice-fairlink is a JDBC driver designed to connect to the read replicas of an AWS Aurora cluster.
 The driver will periodically obtain a description of the cluster and despatch connections to each read replica
@@ -251,19 +251,9 @@ In the current version, dice-fairlink does not dynamically mark replicas as faul
 
 # Installation
 
-Add the following repository to your `~/.m2/settings.xml` file or to your `pom.xml` file.
-```xml
-<repository>
-    <snapshots>
-	<enabled>false</enabled>
-    </snapshots>
-    <id>bintray-dicetechnology-dice-fairlink</id>
-    <name>bintray</name>
-    <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
-</repository>
-```
-
-Add the following dependency to your `pom.xml`
+dice-fairlink is available from [Maven Central](https://search.maven.org/artifact/technology.dice.open/dice-fairlink), with the coordinates `technology.dice.open:dice-fairlink`.
+ 
+ If you are using Maven, just add the following dependency to your `pom.xml`:
 ```xml
 <dependency>
    <groupId>technology.dice.open</groupId>
@@ -276,20 +266,20 @@ dice-fairlink's dependencies are not transitive, and depends only on three `prov
 
 ```xml
 <dependency>
-	<groupId>software.amazon.awssdk</groupId>
-	<artifactId>rds</artifactId>
-	<version>2.7.23</version>
+   <groupId>software.amazon.awssdk</groupId>
+   <artifactId>rds</artifactId>
+   <version>2.7.23</version>
 </dependency>
-	<dependency>
-	<groupId>software.amazon.awssdk</groupId>
-	<artifactId>resourcegroupstaggingapi</artifactId>
-	<version>2.7.23</version>
+   <dependency>
+   <groupId>software.amazon.awssdk</groupId>
+   <artifactId>resourcegroupstaggingapi</artifactId>
+   <version>2.7.23</version>
 </dependency>
 ```
 
 Any version compatible with `2.7.23` will work.
 
-Additionally, the jdbc driver for the underlaying protocol must be available at runtime (usually loaded via SPI).
+Additionally, the jdbc driver for the underlying protocol must be available at runtime (usually loaded via SPI).
 
 
 # Driver properties

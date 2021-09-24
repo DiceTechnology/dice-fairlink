@@ -57,10 +57,13 @@
 
 
   <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
     <repository>
-      <id>bintray-dicetechnology-dice-fairlink</id>
-      <name>dicetechnology-dice-fairlink</name>
-      <url>https://api.bintray.com/maven/dicetechnology/dice-fairlink/dice-fairlink/;publish=1</url>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
 
@@ -194,6 +197,37 @@
     </extensions>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.3</version>
+        <configuration>
+          <sourceFileExcludes>
+            <sourceFileExclude>**/protobuf/*.java</sourceFileExclude>
+          </sourceFileExcludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.4</version>
@@ -262,68 +296,37 @@
 
   <profiles>
     <profile>
-      <id>build-extras</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
+      <id>publish</id>
       <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>2.4</version>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
             <executions>
               <execution>
-                <id>attach-sources</id>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
                 <goals>
-                  <goal>jar-no-fork</goal>
+                  <goal>sign</goal>
                 </goals>
               </execution>
             </executions>
           </plugin>
+
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.10.3</version>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.6.8</version>
+            <extensions>true</extensions>
             <configuration>
-              <sourceFileExcludes>
-                <sourceFileExclude>**/protobuf/*.java</sourceFileExclude>
-              </sourceFileExcludes>
+              <serverId>ossrh</serverId>
+              <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+              <autoReleaseAfterClose>true</autoReleaseAfterClose>
             </configuration>
-            <executions>
-              <execution>
-                <id>attach-javadocs</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>bintray</id>
-      <repositories>
-        <repository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>bintray-dicetechnology-dice-fairlink</id>
-          <name>bintray</name>
-          <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
-        </repository>
-      </repositories>
-      <pluginRepositories>
-        <pluginRepository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>bintray-dicetechnology-dice-fairlink</id>
-          <name>bintray-plugins</name>
-          <url>https://dl.bintray.com/dicetechnology/dice-fairlink</url>
-        </pluginRepository>
-      </pluginRepositories>
     </profile>
   </profiles>
 </project>
