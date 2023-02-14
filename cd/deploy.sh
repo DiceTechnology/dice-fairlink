@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-if [ "$TRAVIS_BRANCH" = 'master' ] && [ "$TRAVIS_PULL_REQUEST" == 'false' ]; then
-    gpg --batch --fast-import gpg.asc
-    mvn deploy -P publish --settings cd/mvnsettings.xml
-fi
+
+set +x
+echo $GPG_KEY | base64 --decode | gpg --batch --fast-import
+set -x
+
+./cd/version.sh && \
+./cd/tag.sh && \
+mvn deploy -P publish -DskipTests=true --settings cd/mvnsettings.xml
