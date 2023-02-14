@@ -33,7 +33,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Set version, sign artifacts and deploy to Maven Central
-        if: ${{ github.ref == 'refs/heads/master' && github.repository == 'DiceTechnology/dice-where' }}
+        if: ${{ github.ref == 'refs/heads/master' && github.repository == 'DiceTechnology/dice-fairlink' }}
         run: cd/deploy.sh
         env:
           GPG_KEY: ${{ secrets.GPG_KEY }}
