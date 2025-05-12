@@ -91,21 +91,18 @@
       <artifactId>assertj-core</artifactId>
       <version>3.9.1</version>
       <scope>test</scope>
-      <type>jar</type>
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-module-junit4</artifactId>
       <version>1.7.3</version>
       <scope>test</scope>
-      <type>jar</type>
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-api-mockito2</artifactId>
       <version>1.7.3</version>
       <scope>test</scope>
-      <type>jar</type>
     </dependency>
     <dependency>
       <groupId>org.easymock</groupId>
@@ -134,13 +131,13 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.19.8</version>
+      <version>1.21.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>mysql</artifactId>
-      <version>1.7.3</version>
+      <version>1.21.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -152,7 +149,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
-      <version>1.7.3</version>
+      <version>1.21.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
