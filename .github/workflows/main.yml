@@ -1,0 +1,43 @@
+name: Java CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Git repo (with tags)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-1
+          path: |
+            ~/.m2/repository
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+      - name: Build with Maven
+        run: mvn --batch-mode --update-snapshots install
+      - name: Run Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Set version, sign artifacts and deploy to Maven Central
+        if: ${{ github.ref == 'refs/heads/master' && github.repository == 'DiceTechnology/dice-fairlink' }}
+        run: cd/deploy.sh
+        env:
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          SLACK_URL: ${{ secrets.SLACK_URL }} 
