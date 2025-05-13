@@ -29,7 +29,6 @@ jobs:
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots install
       - name: Run Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
